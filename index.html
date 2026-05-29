@@ -761,9 +761,6 @@ const state = {
     currentQuery:
         "anime edits",
 
-    currentUser:
-        null,
-
     activeIndex:
         -1,
 
@@ -821,12 +818,26 @@ const Utils = (()=>{
 
 const SupabaseService = (()=>{
 
+    /*
+        AUTH COMPLETELY REMOVED
+        No getSession()
+        No getUser()
+        No initializeAuth()
+    */
+
     if(!window.__SUPABASE_CLIENT__){
 
         window.__SUPABASE_CLIENT__ =
             window.supabase.createClient(
                 CONFIG.SUPABASE_URL,
-                CONFIG.SUPABASE_ANON_KEY
+                CONFIG.SUPABASE_ANON_KEY,
+                {
+                    auth:{
+                        persistSession:false,
+                        autoRefreshToken:false,
+                        detectSessionInUrl:false
+                    }
+                }
             );
 
     }
@@ -834,76 +845,37 @@ const SupabaseService = (()=>{
     const client =
         window.__SUPABASE_CLIENT__;
 
-    async function initializeAuth(){
-
-        try{
-
-            const {
-                data,
-                error
-            } = await client.auth.getUser();
-
-            if(error){
-
-                const { data, error } = await supabase.auth.getSession();
-
-// Only warn if there is an actual API/Network error
-if (error) {
-  console.error("Critical API Error:", error.message);
-} 
-// If data.session is null, it's NOT an error—it just means the user is anonymous.
-// Do nothing, or handle the anonymous state silently.
-else if (!data.session) {
-  console.log("Session not found (user is anonymous).");
-} else {
-  console.log("User is authenticated.");
-}
-
-                return;
-
-            }
-
-            state.currentUser =
-                data.user || null;
-
-        }catch(error){
-
-            console.error(
-                "Auth initialization failed:",
-                error
-            );
-
-        }
-
-    }
-
     async function saveSearch(term){
 
-        if(!state.currentUser)
-            return;
-
         try{
+
+            /*
+                Optional anonymous insert.
+                Your table must allow anon inserts
+                via RLS policies if you want this saved.
+            */
 
             await client
                 .from("search_history")
-                .insert({
-
-                    user_id:
-                        state.currentUser.id,
+                .insert([{
 
                     search_term:
                         term,
 
-                    timestamp:
+                    created_at:
                         new Date().toISOString()
 
-                });
+                }]);
 
         }catch(error){
 
-            console.error(
-                "Save search failed:",
-                error
+            /*
+                Silent fail to avoid app crashes
+            */
+
+            console.warn(
+                "Search history save skipped:",
+                error.message
             );
 
         }
@@ -912,9 +884,6 @@ else if (!data.session) {
 
     async function getRecentSearches(){
 
-        if(!state.currentUser)
-            return [];
-
         try{
 
             const {
@@ -922,22 +891,16 @@ else if (!data.session) {
                 error
             } = await client
                 .from("search_history")
-                .select(
-                    "search_term, timestamp"
-                )
-                .eq(
-                    "user_id",
-                    state.currentUser.id
-                )
+                .select("search_term")
                 .order(
-                    "timestamp",
+                    "created_at",
                     { ascending:false }
                 )
-                .limit(10);
+                .limit(5);
 
             if(error){
 
-                console.error(error);
+                console.warn(error.message);
 
                 return [];
 
@@ -947,7 +910,7 @@ else if (!data.session) {
 
         }catch(error){
 
-            console.error(error);
+            console.warn(error.message);
 
             return [];
 
@@ -957,7 +920,7 @@ else if (!data.session) {
 
     return {
 
-        initializeAuth,
+        client,
         saveSearch,
         getRecentSearches
 
@@ -978,6 +941,8 @@ const YouTubeService = (()=>{
             `?part=snippet` +
             `&type=video` +
             `&videoDuration=short` +
+            `&videoEmbeddable=true` +
+            `&safeSearch=none` +
             `&maxResults=${CONFIG.MAX_RESULTS}` +
             `&q=${encodeURIComponent(query)}` +
             `&key=${CONFIG.YOUTUBE_API_KEY}`;
@@ -985,10 +950,22 @@ const YouTubeService = (()=>{
         const response =
             await fetch(endpoint);
 
+        if(!response.ok){
+
+            throw new Error(
+                "YouTube API request failed"
+            );
+
+        }
+
         const data =
             await response.json();
 
-        return data.items || [];
+        return (data.items || []).filter(
+            item =>
+                item.id &&
+                item.id.videoId
+        );
 
     }
 
@@ -1060,8 +1037,7 @@ const UI = (()=>{
                 history.map(
                     item=>item.search_term
                 )
-            )]
-            .slice(0,5);
+            )];
 
         uniqueTerms.forEach(term=>{
 
@@ -1131,58 +1107,88 @@ const PlayerManager = (()=>{
         item.initialized =
             true;
 
-        item.player =
-            new YT.Player(
-                `player-${index}`,
-                {
+        try{
 
-                videoId:
-                    item.videoId,
+            item.player =
+                new YT.Player(
+                    `player-${index}`,
+                    {
 
-                playerVars:{
+                    videoId:
+                        item.videoId,
 
-                    autoplay:0,
-                    controls:0,
-                    modestbranding:1,
-                    rel:0,
-                    fs:0,
-                    playsinline:1,
-                    loop:1,
-                    playlist:item.videoId,
-                    mute:1,
-                    iv_load_policy:3,
+                    playerVars:{
 
-                    enablejsapi:1,
+                        autoplay:1,
+                        controls:0,
+                        modestbranding:1,
+                        rel:0,
+                        fs:0,
+                        playsinline:1,
+                        loop:1,
+                        playlist:item.videoId,
+                        mute:1,
+                        iv_load_policy:3,
+                        disablekb:1,
+                        enablejsapi:1,
 
-                    origin:
-                        window.location.origin
+                        origin:
+                            window.location.origin
 
-                },
+                    },
 
-                events:{
+                    events:{
 
-                    onReady:(event)=>{
-
-                        if(
-                            index ===
-                            state.activeIndex
-                        ){
+                        onReady:(event)=>{
 
                             try{
 
-                                if(!state.isPaused) {
+                                if(
+                                    index ===
+                                    state.activeIndex
+                                ){
+
                                     event.target.playVideo();
+
+                                    if(
+                                        state.globalMuted
+                                    ){
+
+                                        event.target.mute();
+
+                                    }else{
+
+                                        event.target.unMute();
+
+                                    }
+
                                 }
-                                
+
                             }catch(err){}
+
+                        },
+
+                        onError:(err)=>{
+
+                            console.warn(
+                                "Player error:",
+                                err.data
+                            );
 
                         }
 
                     }
 
-                }
+                });
 
-            });
+        }catch(error){
+
+            console.warn(
+                "YT Player init failed:",
+                error
+            );
+
+        }
 
     }
 
@@ -1256,8 +1262,6 @@ const PlayerManager = (()=>{
 
     return {
 
-        loadPlayer,
-        destroyPlayer,
         ensureSlidingWindow
 
     };
@@ -1383,7 +1387,11 @@ const FeedRenderer = (()=>{
 
         ObserverManager.setup();
 
-        App.activateVideo(0);
+        requestAnimationFrame(()=>{
+
+            App.activateVideo(0);
+
+        });
 
     }
 
@@ -1466,17 +1474,29 @@ const App = (()=>{
 
     async function initialize(){
 
-        await SupabaseService
-            .initializeAuth();
+        try{
 
-        await UI.renderSearchHistory();
+            attachEvents();
 
-        await search(
-            state.currentQuery,
-            false
-        );
+            await UI.renderSearchHistory();
 
-        attachEvents();
+            await search(
+                state.currentQuery,
+                false
+            );
+
+        }catch(error){
+
+            console.error(
+                "App initialization failed:",
+                error
+            );
+
+            UI.showError(
+                "Failed To Initialize App"
+            );
+
+        }
 
     }
 
@@ -1493,18 +1513,18 @@ const App = (()=>{
 
         UI.showLoader();
 
-        if(save){
-
-            await SupabaseService
-                .saveSearch(
-                    state.currentQuery
-                );
-
-            await UI.renderSearchHistory();
-
-        }
-
         try{
+
+            if(save){
+
+                await SupabaseService
+                    .saveSearch(
+                        state.currentQuery
+                    );
+
+                await UI.renderSearchHistory();
+
+            }
 
             const videos =
                 await YouTubeService.search(
@@ -1537,18 +1557,37 @@ const App = (()=>{
 
     }
 
-    function togglePause() {
-        state.isPaused = !state.isPaused;
-        const current = state.players[state.activeIndex];
-        if (current && current.player) {
-            try {
-                if (state.isPaused) {
+    function togglePause(){
+
+        state.isPaused =
+            !state.isPaused;
+
+        const current =
+            state.players[
+                state.activeIndex
+            ];
+
+        if(
+            current &&
+            current.player
+        ){
+
+            try{
+
+                if(state.isPaused){
+
                     current.player.pauseVideo();
-                } else {
+
+                }else{
+
                     current.player.playVideo();
+
                 }
-            } catch (err) {}
+
+            }catch(err){}
+
         }
+
     }
 
     function activateVideo(index){
@@ -1583,10 +1622,14 @@ const App = (()=>{
 
                 if(i === index){
 
-                    if (!state.isPaused) {
-                        item.player.playVideo();
-                    } else {
+                    if(state.isPaused){
+
                         item.player.pauseVideo();
+
+                    }else{
+
+                        item.player.playVideo();
+
                     }
 
                     if(state.globalMuted){
@@ -1731,11 +1774,22 @@ const App = (()=>{
             }
         );
 
-        // Pause/Play Toggle Event
-        document.body.addEventListener("click", (e) => {
-            if (e.target.closest('.action-btn') || e.target.closest('.scroll-btn') || e.target.closest('.search-shell')) return;
-            togglePause();
-        });
+        document.body.addEventListener(
+            "click",
+            (e)=>{
+
+                if(
+                    e.target.closest(".action-btn") ||
+                    e.target.closest(".scroll-btn") ||
+                    e.target.closest(".search-shell")
+                ){
+                    return;
+                }
+
+                togglePause();
+
+            }
+        );
 
         document.body.addEventListener(
             "click",
@@ -1755,26 +1809,28 @@ const App = (()=>{
 
         initialize,
         search,
-        activateVideo,
-        togglePause
+        activateVideo
 
     };
 
 })();
 
 /* ==========================================
-    YOUTUBE GLOBAL CALLBACK
+    YOUTUBE API READY
 ========================================== */
 
 window.onYouTubeIframeAPIReady =
     function(){
+
+        console.log(
+            "YouTube API Ready"
+        );
 
         App.initialize();
 
     };
 
 })();
-
 </script>
 
 </body>
