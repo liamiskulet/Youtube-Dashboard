@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,334 +13,7 @@
 
 <title>Shorts Search Feed</title>
 
-/* =========================
-   TAP FEEDBACK ICON
-========================= */
-
-.tap-feedback{
-
-    position:absolute;
-
-    top:50%;
-    left:50%;
-
-    transform:
-        translate(-50%,-50%)
-        scale(.8);
-
-    width:92px;
-    height:92px;
-
-    border-radius:50%;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    background:
-        rgba(0,0,0,.42);
-
-    backdrop-filter:
-        blur(18px);
-
-    border:
-        1px solid rgba(255,255,255,.12);
-
-    color:white;
-
-    font-size:42px;
-
-    z-index:30;
-
-    opacity:0;
-
-    pointer-events:none;
-
-    transition:
-        opacity .22s ease,
-        transform .22s ease;
-}
-
-.tap-feedback.show{
-
-    opacity:1;
-
-    transform:
-        translate(-50%,-50%)
-        scale(1);
-
-}
-
-/* =========================
-   VIDEO TAP AREA
-========================= */
-
-.video-tap-layer{
-
-    position:absolute;
-
-    inset:0;
-
-    z-index:4;
-
-}
-
-/* =========================
-   SEARCH HEADER FIX
-========================= */
-
-.search-header{
-
-    z-index:1000;
-
-}
-
-/* =========================
-   SIDEBAR FIX
-========================= */
-
-.sidebar{
-
-    z-index:50;
-
-}
-
-.action-btn{
-
-    cursor:pointer;
-
-}
-<!--
-REPLACE YOUR EXISTING renderFeed() FUNCTION WITH THIS VERSION
--->
-
-function renderFeed(videos){
-
-    feed.innerHTML = "";
-
-    activeIndex = -1;
-
-    videos.forEach((video,index)=>{
-
-        const section =
-            document.createElement(
-                "section"
-            );
-
-        section.className =
-            "video-section";
-
-        section.dataset.index =
-            index;
-
-        section.innerHTML = `
-
-            <div class="player-shell">
-
-                <div id="player-${index}"></div>
-
-            </div>
-
-            <!-- TAP AREA -->
-
-            <div
-                class="video-tap-layer"
-                data-tap-layer="true"
-            ></div>
-
-            <!-- PLAY/PAUSE FEEDBACK -->
-
-            <div
-                class="tap-feedback"
-                id="feedback-${index}"
-            >
-                ▶
-            </div>
-
-            <div class="top-gradient"></div>
-
-            <div class="bottom-gradient"></div>
-
-            <div class="meta">
-
-                <div class="channel">
-                    @${escapeHTML(
-                        video.snippet.channelTitle
-                    )}
-                </div>
-
-                <div class="title">
-                    ${escapeHTML(
-                        video.snippet.title
-                    )}
-                </div>
-
-            </div>
-
-            <div class="sidebar">
-
-                <div class="action">
-
-                    <div class="action-btn">
-                        ❤️
-                    </div>
-
-                    <div class="action-label">
-                        Like
-                    </div>
-
-                </div>
-
-                <div class="action">
-
-                    <div class="action-btn">
-                        💬
-                    </div>
-
-                    <div class="action-label">
-                        Comment
-                    </div>
-
-                </div>
-
-                <div class="action">
-
-                    <div class="action-btn">
-                        📤
-                    </div>
-
-                    <div class="action-label">
-                        Share
-                    </div>
-
-                </div>
-
-            </div>
-
-        `;
-
-        feed.appendChild(section);
-
-        players.push({
-
-            id:
-                video.id.videoId,
-
-            player:null
-
-        });
-
-    });
-
-    initializePlayers();
-
-    setupObserver();
-
-    setupTapPlayback();
-
-}
-<!--
-ADD THESE NEW FUNCTIONS BELOW activateVideo()
--->
-
-/* =========================
-   TAP PLAY / PAUSE
-========================= */
-
-function setupTapPlayback(){
-
-    const tapLayers =
-        document.querySelectorAll(
-            "[data-tap-layer]"
-        );
-
-    tapLayers.forEach(layer=>{
-
-        layer.addEventListener(
-            "click",
-            ()=>{
-
-                togglePlayback();
-
-            }
-        );
-
-    });
-
-}
-
-function togglePlayback(){
-
-    const activePlayer =
-        players[activeIndex]?.player;
-
-    if(!activePlayer)
-        return;
-
-    const state =
-        activePlayer.getPlayerState();
-
-    /*
-        YT.PlayerState.PLAYING = 1
-        YT.PlayerState.PAUSED = 2
-    */
-
-    if(state === 1){
-
-        activePlayer.pauseVideo();
-
-        showTapFeedback(
-            activeIndex,
-            "⏸"
-        );
-
-    }else{
-
-        activePlayer.playVideo();
-
-        showTapFeedback(
-            activeIndex,
-            "▶"
-        );
-
-    }
-
-}
-
-function showTapFeedback(
-    index,
-    icon
-){
-
-    const feedback =
-        document.getElementById(
-            `feedback-${index}`
-        );
-
-    if(!feedback)
-        return;
-
-    feedback.textContent =
-        icon;
-
-    feedback.classList.add(
-        "show"
-    );
-
-    clearTimeout(
-        feedback._timeout
-    );
-
-    feedback._timeout =
-        setTimeout(()=>{
-
-            feedback.classList.remove(
-                "show"
-            );
-
-        },220);
-
-}
+<style>
 
 /* =========================
    RESET
@@ -440,8 +112,6 @@ body{
     pointer-events:none;
 }
 
-/* Tall Phones */
-
 @media (max-aspect-ratio:9/16){
 
     .player-shell iframe{
@@ -465,7 +135,7 @@ body{
     left:0;
     right:0;
 
-    z-index:999;
+    z-index:1000;
 
     padding:
         env(safe-area-inset-top)
@@ -634,6 +304,78 @@ body{
 }
 
 /* =========================
+   TAP FEEDBACK
+========================= */
+
+.tap-feedback{
+
+    position:absolute;
+
+    top:50%;
+    left:50%;
+
+    transform:
+        translate(-50%,-50%)
+        scale(.8);
+
+    width:92px;
+    height:92px;
+
+    border-radius:50%;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    background:
+        rgba(0,0,0,.42);
+
+    backdrop-filter:
+        blur(18px);
+
+    border:
+        1px solid rgba(255,255,255,.12);
+
+    color:white;
+
+    font-size:42px;
+
+    z-index:30;
+
+    opacity:0;
+
+    pointer-events:none;
+
+    transition:
+        opacity .22s ease,
+        transform .22s ease;
+}
+
+.tap-feedback.show{
+
+    opacity:1;
+
+    transform:
+        translate(-50%,-50%)
+        scale(1);
+
+}
+
+/* =========================
+   VIDEO TAP AREA
+========================= */
+
+.video-tap-layer{
+
+    position:absolute;
+
+    inset:0;
+
+    z-index:4;
+
+}
+
+/* =========================
    GRADIENTS
 ========================= */
 
@@ -740,7 +482,7 @@ body{
     right:12px;
     bottom:95px;
 
-    z-index:5;
+    z-index:50;
 
     display:flex;
     flex-direction:column;
@@ -788,6 +530,8 @@ body{
     transition:
         transform .15s ease,
         background .15s ease;
+
+    cursor:pointer;
 }
 
 .action-btn:active{
@@ -897,8 +641,6 @@ body{
 
 <div id="app">
 
-    <!-- SEARCH -->
-
     <div class="search-header">
 
         <div class="search-shell">
@@ -923,16 +665,12 @@ body{
 
     </div>
 
-    <!-- SOUND OVERLAY -->
-
     <div
         class="sound-overlay"
         id="soundOverlay"
     >
         Tap Screen for Sound 🔊
     </div>
-
-    <!-- FEED -->
 
     <div id="feed">
 
@@ -950,18 +688,10 @@ body{
 
 <script>
 
-/* =========================
-   CONFIG
-========================= */
-
 const API_KEY =
-    "YOUR_YOUTUBE_API_KEY";
+    "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc";
 
 const MAX_RESULTS = 50;
-
-/* =========================
-   ELEMENTS
-========================= */
 
 const feed =
     document.getElementById("feed");
@@ -980,10 +710,6 @@ const searchBtn =
     document.getElementById(
         "searchBtn"
     );
-
-/* =========================
-   STATE
-========================= */
 
 let currentQuery =
     "anime edits";
@@ -1084,6 +810,18 @@ function renderFeed(videos){
 
             </div>
 
+            <div
+                class="video-tap-layer"
+                data-tap-layer="true"
+            ></div>
+
+            <div
+                class="tap-feedback"
+                id="feedback-${index}"
+            >
+                ▶
+            </div>
+
             <div class="top-gradient"></div>
 
             <div class="bottom-gradient"></div>
@@ -1162,6 +900,8 @@ function renderFeed(videos){
     initializePlayers();
 
     setupObserver();
+
+    setupTapPlayback();
 
 }
 
@@ -1305,6 +1045,100 @@ function activateVideo(index){
         }
 
     });
+
+}
+
+/* =========================
+   TAP PLAY / PAUSE
+========================= */
+
+function setupTapPlayback(){
+
+    const tapLayers =
+        document.querySelectorAll(
+            "[data-tap-layer]"
+        );
+
+    tapLayers.forEach(layer=>{
+
+        layer.addEventListener(
+            "click",
+            ()=>{
+
+                togglePlayback();
+
+            }
+        );
+
+    });
+
+}
+
+function togglePlayback(){
+
+    const activePlayer =
+        players[activeIndex]?.player;
+
+    if(!activePlayer)
+        return;
+
+    const state =
+        activePlayer.getPlayerState();
+
+    if(state === 1){
+
+        activePlayer.pauseVideo();
+
+        showTapFeedback(
+            activeIndex,
+            "⏸"
+        );
+
+    }else{
+
+        activePlayer.playVideo();
+
+        showTapFeedback(
+            activeIndex,
+            "▶"
+        );
+
+    }
+
+}
+
+function showTapFeedback(
+    index,
+    icon
+){
+
+    const feedback =
+        document.getElementById(
+            `feedback-${index}`
+        );
+
+    if(!feedback)
+        return;
+
+    feedback.textContent =
+        icon;
+
+    feedback.classList.add(
+        "show"
+    );
+
+    clearTimeout(
+        feedback._timeout
+    );
+
+    feedback._timeout =
+        setTimeout(()=>{
+
+            feedback.classList.remove(
+                "show"
+            );
+
+        },220);
 
 }
 
@@ -1475,4 +1309,3 @@ function onYouTubeIframeAPIReady(){
 
 </body>
 </html>
-```
