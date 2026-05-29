@@ -688,10 +688,18 @@ body{
 
 <script>
 
+/* =========================
+   CONFIG
+========================= */
+
 const API_KEY =
     "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc";
 
 const MAX_RESULTS = 50;
+
+/* =========================
+   ELEMENTS
+========================= */
 
 const feed =
     document.getElementById("feed");
@@ -710,6 +718,10 @@ const searchBtn =
     document.getElementById(
         "searchBtn"
     );
+
+/* =========================
+   STATE
+========================= */
 
 let currentQuery =
     "anime edits";
@@ -788,6 +800,12 @@ function renderFeed(videos){
     feed.innerHTML = "";
 
     activeIndex = -1;
+
+    players = videos.map(video => ({
+        id: video.id.videoId,
+        player: null,
+        initialized: false
+    }));
 
     videos.forEach((video,index)=>{
 
@@ -886,72 +904,69 @@ function renderFeed(videos){
 
         feed.appendChild(section);
 
-        players.push({
-
-            id:
-                video.id.videoId,
-
-            player:null
-
-        });
-
     });
-
-    initializePlayers();
 
     setupObserver();
 
     setupTapPlayback();
 
+    initializePlayer(0);
+
+    initializePlayer(1);
+
 }
 
 /* =========================
-   PLAYERS
+   LAZY PLAYER INIT
 ========================= */
 
-function initializePlayers(){
+function initializePlayer(index){
 
-    players.forEach((item,index)=>{
+    const item = players[index];
 
-        item.player =
-            new YT.Player(
-                `player-${index}`,
-                {
+    if(!item) return;
 
-                videoId:item.id,
+    if(item.initialized) return;
 
-                playerVars:{
+    item.initialized = true;
 
-                    autoplay:0,
-                    controls:0,
-                    modestbranding:1,
-                    rel:0,
-                    fs:0,
-                    playsinline:1,
-                    loop:1,
-                    playlist:item.id,
-                    mute:1,
-                    iv_load_policy:3
+    item.player =
+        new YT.Player(
+            `player-${index}`,
+            {
 
-                },
+            videoId:item.id,
 
-                events:{
+            playerVars:{
 
-                    onReady:()=>{
+                autoplay:0,
+                controls:0,
+                modestbranding:1,
+                rel:0,
+                fs:0,
+                playsinline:1,
+                loop:1,
+                playlist:item.id,
+                mute:1,
+                iv_load_policy:3
 
-                        if(index === 0){
+            },
 
-                            activateVideo(0);
+            events:{
 
-                        }
+                onReady:()=>{
+
+                    if(index === activeIndex || activeIndex === -1){
+
+                        activateVideo(index);
 
                     }
 
                 }
 
-            });
+            }
 
-    });
+        });
 
 }
 
@@ -973,24 +988,35 @@ function setupObserver(){
 
             entries.forEach(entry=>{
 
+                const index =
+                    Number(
+                        entry.target.dataset.index
+                    );
+
                 if(
                     entry.isIntersecting &&
-                    entry.intersectionRatio > .8
+                    entry.intersectionRatio > .75
                 ){
 
-                    const index =
-                        Number(
-                            entry.target.dataset.index
-                        );
-
                     activateVideo(index);
+
+                }else{
+
+                    const player =
+                        players[index]?.player;
+
+                    if(player?.pauseVideo){
+
+                        player.pauseVideo();
+
+                    }
 
                 }
 
             });
 
         },{
-            threshold:[0.8]
+            threshold:[0.75]
         });
 
     document
@@ -1015,6 +1041,10 @@ function activateVideo(index){
         return;
 
     activeIndex = index;
+
+    initializePlayer(index);
+
+    initializePlayer(index + 1);
 
     players.forEach((item,i)=>{
 
@@ -1041,6 +1071,44 @@ function activateVideo(index){
         }else{
 
             player.pauseVideo();
+
+        }
+
+    });
+
+    cleanupFarPlayers(index);
+
+}
+
+/* =========================
+   MEMORY CLEANUP
+========================= */
+
+function cleanupFarPlayers(centerIndex){
+
+    players.forEach((item,index)=>{
+
+        if(
+            Math.abs(index - centerIndex) > 2 &&
+            item.player
+        ){
+
+            item.player.destroy();
+
+            item.player = null;
+
+            item.initialized = false;
+
+            const mount =
+                document.getElementById(
+                    `player-${index}`
+                );
+
+            if(mount){
+
+                mount.innerHTML = "";
+
+            }
 
         }
 
