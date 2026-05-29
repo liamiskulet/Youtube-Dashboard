@@ -1,6 +1,6 @@
 {
   "name": "liamiskulet-video-dashboard-v3",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "YouTube search and player dashboard using Data API v3",
   "main": "index.html",
   "keywords": [
