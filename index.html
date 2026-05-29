@@ -127,27 +127,6 @@ body{
 }
 
 /* =========================
-   GLASSMORPHISM
-========================= */
-
-.glass{
-    background:
-        rgba(0,0,0,.40);
-
-    backdrop-filter:
-        blur(15px);
-
-    -webkit-backdrop-filter:
-        blur(15px);
-
-    border:
-        1px solid rgba(255,255,255,.10);
-
-    box-shadow:
-        0 10px 40px rgba(0,0,0,.35);
-}
-
-/* =========================
    SEARCH HEADER
 ========================= */
 
@@ -976,9 +955,16 @@ function renderFeed(videos){
     activeIndex = -1;
 
     players = videos.map(video => ({
-        id: video.id.videoId,
-        player: null,
-        initialized: false
+
+        id:
+            video.id.videoId,
+
+        player:null,
+
+        initialized:false,
+
+        destroyed:false
+
     }));
 
     videos.forEach((video,index)=>{
@@ -1084,25 +1070,36 @@ function renderFeed(videos){
 
     setupTapPlayback();
 
-    initializePlayer(0);
-
-    initializePlayer(1);
+    ensureSlidingWindow(0);
 
 }
 
 /* =========================
-   LAZY PLAYER INIT
+   PLAYER CREATION
 ========================= */
 
-function initializePlayer(index){
+function createPlayer(index){
 
-    const item = players[index];
+    const item =
+        players[index];
 
-    if(!item) return;
+    if(!item)
+        return;
 
-    if(item.initialized) return;
+    if(item.initialized)
+        return;
+
+    const mount =
+        document.getElementById(
+            `player-${index}`
+        );
+
+    if(!mount)
+        return;
 
     item.initialized = true;
+
+    item.destroyed = false;
 
     item.player =
         new YT.Player(
@@ -1128,12 +1125,52 @@ function initializePlayer(index){
 
             events:{
 
-                onReady:()=>{
+                onReady:(event)=>{
 
-                    if(index === activeIndex || activeIndex === -1){
+                    const current =
+                        players[index];
 
-                        activateVideo(index);
+                    if(
+                        !current ||
+                        current.destroyed ||
+                        !current.player
+                    ){
+                        return;
+                    }
 
+                    if(index === activeIndex){
+
+                        try{
+
+                            event.target.playVideo();
+
+                            if(globalMuted){
+
+                                event.target.mute();
+
+                            }else{
+
+                                event.target.unMute();
+
+                            }
+
+                        }catch(err){}
+
+                    }
+
+                },
+
+                onStateChange:(event)=>{
+
+                    const current =
+                        players[index];
+
+                    if(
+                        !current ||
+                        current.destroyed ||
+                        !current.player
+                    ){
+                        return;
                     }
 
                 }
@@ -1141,6 +1178,84 @@ function initializePlayer(index){
             }
 
         });
+
+}
+
+/* =========================
+   DESTROY PLAYER
+========================= */
+
+function destroyPlayer(index){
+
+    const item =
+        players[index];
+
+    if(!item)
+        return;
+
+    if(!item.player)
+        return;
+
+    item.destroyed = true;
+
+    try{
+
+        item.player.destroy();
+
+    }catch(err){}
+
+    item.player = null;
+
+    item.initialized = false;
+
+    const mount =
+        document.getElementById(
+            `player-${index}`
+        );
+
+    if(mount){
+
+        mount.innerHTML = "";
+
+    }
+
+}
+
+/* =========================
+   3 PLAYER WINDOW
+========================= */
+
+function ensureSlidingWindow(centerIndex){
+
+    const allowed =
+        new Set([
+            centerIndex - 1,
+            centerIndex,
+            centerIndex + 1
+        ]);
+
+    allowed.forEach(index=>{
+
+        if(
+            index >= 0 &&
+            index < players.length
+        ){
+
+            createPlayer(index);
+
+        }
+
+    });
+
+    players.forEach((item,index)=>{
+
+        if(!allowed.has(index)){
+
+            destroyPlayer(index);
+
+        }
+
+    });
 
 }
 
@@ -1162,28 +1277,17 @@ function setupObserver(){
 
             entries.forEach(entry=>{
 
-                const index =
-                    Number(
-                        entry.target.dataset.index
-                    );
-
                 if(
                     entry.isIntersecting &&
                     entry.intersectionRatio > .75
                 ){
 
+                    const index =
+                        Number(
+                            entry.target.dataset.index
+                        );
+
                     activateVideo(index);
-
-                }else{
-
-                    const player =
-                        players[index]?.player;
-
-                    if(player?.pauseVideo){
-
-                        player.pauseVideo();
-
-                    }
 
                 }
 
@@ -1211,80 +1315,54 @@ function setupObserver(){
 
 function activateVideo(index){
 
+    if(index < 0)
+        return;
+
+    if(index >= players.length)
+        return;
+
     if(activeIndex === index)
         return;
 
     activeIndex = index;
 
-    initializePlayer(index);
-
-    initializePlayer(index + 1);
+    ensureSlidingWindow(index);
 
     players.forEach((item,i)=>{
 
         const player =
             item.player;
 
-        if(!player?.playVideo)
+        if(
+            !player ||
+            item.destroyed
+        ){
             return;
+        }
 
-        if(i === index){
+        try{
 
-            player.playVideo();
+            if(i === index){
 
-            if(globalMuted){
+                player.playVideo();
 
-                player.mute();
+                if(globalMuted){
+
+                    player.mute();
+
+                }else{
+
+                    player.unMute();
+
+                }
 
             }else{
 
-                player.unMute();
+                player.pauseVideo();
 
             }
 
-        }else{
-
-            player.pauseVideo();
-
-        }
-
-    });
-
-    cleanupFarPlayers(index);
-
-}
-
-/* =========================
-   MEMORY CLEANUP
-========================= */
-
-function cleanupFarPlayers(centerIndex){
-
-    players.forEach((item,index)=>{
-
-        if(
-            Math.abs(index - centerIndex) > 2 &&
-            item.player
-        ){
-
-            item.player.destroy();
-
-            item.player = null;
-
-            item.initialized = false;
-
-            const mount =
-                document.getElementById(
-                    `player-${index}`
-                );
-
-            if(mount){
-
-                mount.innerHTML = "";
-
-            }
-
-        }
+        }catch(err){}
 
     });
 
@@ -1295,6 +1373,12 @@ function cleanupFarPlayers(centerIndex){
 ========================= */
 
 function scrollToVideo(index){
+
+    if(index < 0)
+        return;
+
+    if(index >= players.length)
+        return;
 
     const sections =
         document.querySelectorAll(
@@ -1308,8 +1392,11 @@ function scrollToVideo(index){
         return;
 
     target.scrollIntoView({
+
         behavior:"smooth",
+
         block:"start"
+
     });
 
 }
@@ -1364,34 +1451,44 @@ function setupTapPlayback(){
 
 function togglePlayback(){
 
+    const current =
+        players[activeIndex];
+
+    if(!current)
+        return;
+
     const activePlayer =
-        players[activeIndex]?.player;
+        current.player;
 
     if(!activePlayer)
         return;
 
-    const state =
-        activePlayer.getPlayerState();
+    try{
 
-    if(state === 1){
+        const state =
+            activePlayer.getPlayerState();
 
-        activePlayer.pauseVideo();
+        if(state === 1){
 
-        showTapFeedback(
-            activeIndex,
-            "⏸"
-        );
+            activePlayer.pauseVideo();
 
-    }else{
+            showTapFeedback(
+                activeIndex,
+                "⏸"
+            );
 
-        activePlayer.playVideo();
+        }else{
 
-        showTapFeedback(
-            activeIndex,
-            "▶"
-        );
+            activePlayer.playVideo();
 
-    }
+            showTapFeedback(
+                activeIndex,
+                "▶"
+            );
+
+        }
+
+    }catch(err){}
 
 }
 
@@ -1442,13 +1539,9 @@ function cleanupPlayers(){
 
     }
 
-    players.forEach(item=>{
+    players.forEach((_,index)=>{
 
-        if(item.player?.destroy){
-
-            item.player.destroy();
-
-        }
+        destroyPlayer(index);
 
     });
 
@@ -1477,12 +1570,20 @@ function enableSound(){
         "hidden"
     );
 
-    const activePlayer =
-        players[activeIndex]?.player;
+    const current =
+        players[activeIndex];
 
-    if(activePlayer?.unMute){
+    if(
+        current &&
+        current.player &&
+        !current.destroyed
+    ){
 
-        activePlayer.unMute();
+        try{
+
+            current.player.unMute();
+
+        }catch(err){}
 
     }
 
