@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -242,6 +243,9 @@ body{
     backdrop-filter:
         blur(15px);
 
+    -webkit-backdrop-filter:
+        blur(15px);
+
     border:
         1px solid rgba(255,255,255,.12);
 }
@@ -279,6 +283,9 @@ body{
     backdrop-filter:
         blur(15px);
 
+    -webkit-backdrop-filter:
+        blur(15px);
+
     border:
         1px solid rgba(255,255,255,.12);
 
@@ -310,7 +317,7 @@ body{
 }
 
 /* =========================
-   FLOATING ARROWS
+   FLOATING SCROLL
 ========================= */
 
 .scroll-controls{
@@ -362,7 +369,6 @@ body{
 
     transition:
         transform .18s ease,
-        background .18s ease,
         opacity .18s ease;
 
     box-shadow:
@@ -433,6 +439,9 @@ body{
         rgba(0,0,0,.42);
 
     backdrop-filter:
+        blur(18px);
+
+    -webkit-backdrop-filter:
         blur(18px);
 
     border:
@@ -550,6 +559,9 @@ body{
     backdrop-filter:
         blur(15px);
 
+    -webkit-backdrop-filter:
+        blur(15px);
+
     border:
         1px solid rgba(255,255,255,.10);
 
@@ -637,6 +649,9 @@ body{
     backdrop-filter:
         blur(15px);
 
+    -webkit-backdrop-filter:
+        blur(15px);
+
     border:
         1px solid rgba(255,255,255,.12);
 
@@ -646,8 +661,7 @@ body{
     font-size:25px;
 
     transition:
-        transform .15s ease,
-        background .15s ease;
+        transform .15s ease;
 
     cursor:pointer;
 
@@ -959,11 +973,14 @@ function renderFeed(videos){
         id:
             video.id.videoId,
 
-        player:null,
+        player:
+            null,
 
-        initialized:false,
+        initialized:
+            false,
 
-        destroyed:false
+        destroyed:
+            false
 
     }));
 
@@ -1070,7 +1087,7 @@ function renderFeed(videos){
 
     setupTapPlayback();
 
-    ensureSlidingWindow(0);
+    activateVideo(0);
 
 }
 
@@ -1078,7 +1095,7 @@ function renderFeed(videos){
    PLAYER CREATION
 ========================= */
 
-function createPlayer(index){
+function loadPlayer(index){
 
     const item =
         players[index];
@@ -1106,7 +1123,8 @@ function createPlayer(index){
             `player-${index}`,
             {
 
-            videoId:item.id,
+            videoId:
+                item.id,
 
             playerVars:{
 
@@ -1119,7 +1137,12 @@ function createPlayer(index){
                 loop:1,
                 playlist:item.id,
                 mute:1,
-                iv_load_policy:3
+                iv_load_policy:3,
+
+                enablejsapi:1,
+
+                origin:
+                    window.location.origin
 
             },
 
@@ -1173,6 +1196,15 @@ function createPlayer(index){
                         return;
                     }
 
+                },
+
+                onError:()=>{
+
+                    console.warn(
+                        "Player error at index:",
+                        index
+                    );
+
                 }
 
             }
@@ -1197,6 +1229,12 @@ function destroyPlayer(index){
         return;
 
     item.destroyed = true;
+
+    try{
+
+        item.player.stopVideo();
+
+    }catch(err){}
 
     try{
 
@@ -1227,21 +1265,20 @@ function destroyPlayer(index){
 
 function ensureSlidingWindow(centerIndex){
 
-    const allowed =
-        new Set([
-            centerIndex - 1,
-            centerIndex,
-            centerIndex + 1
-        ]);
+    const allowedIndexes = [
+        centerIndex - 1,
+        centerIndex,
+        centerIndex + 1
+    ];
 
-    allowed.forEach(index=>{
+    allowedIndexes.forEach(index=>{
 
         if(
             index >= 0 &&
             index < players.length
         ){
 
-            createPlayer(index);
+            loadPlayer(index);
 
         }
 
@@ -1249,7 +1286,9 @@ function ensureSlidingWindow(centerIndex){
 
     players.forEach((item,index)=>{
 
-        if(!allowed.has(index)){
+        if(
+            Math.abs(index - centerIndex) > 1
+        ){
 
             destroyPlayer(index);
 
@@ -1273,13 +1312,14 @@ function setupObserver(){
 
     observer =
         new IntersectionObserver(
-            entries=>{
+
+        entries=>{
 
             entries.forEach(entry=>{
 
                 if(
                     entry.isIntersecting &&
-                    entry.intersectionRatio > .75
+                    entry.intersectionRatio >= .75
                 ){
 
                     const index =
@@ -1293,7 +1333,8 @@ function setupObserver(){
 
             });
 
-        },{
+        },
+        {
             threshold:[0.75]
         });
 
@@ -1330,12 +1371,10 @@ function activateVideo(index){
 
     players.forEach((item,i)=>{
 
-        const player =
-            item.player;
-
         if(
-            !player ||
-            item.destroyed
+            !item ||
+            item.destroyed ||
+            !item.player
         ){
             return;
         }
@@ -1344,21 +1383,21 @@ function activateVideo(index){
 
             if(i === index){
 
-                player.playVideo();
+                item.player.playVideo();
 
                 if(globalMuted){
 
-                    player.mute();
+                    item.player.mute();
 
                 }else{
 
-                    player.unMute();
+                    item.player.unMute();
 
                 }
 
             }else{
 
-                player.pauseVideo();
+                item.player.pauseVideo();
 
             }
 
@@ -1457,20 +1496,20 @@ function togglePlayback(){
     if(!current)
         return;
 
-    const activePlayer =
-        current.player;
+    if(!current.player)
+        return;
 
-    if(!activePlayer)
+    if(current.destroyed)
         return;
 
     try{
 
         const state =
-            activePlayer.getPlayerState();
+            current.player.getPlayerState();
 
         if(state === 1){
 
-            activePlayer.pauseVideo();
+            current.player.pauseVideo();
 
             showTapFeedback(
                 activeIndex,
@@ -1479,7 +1518,7 @@ function togglePlayback(){
 
         }else{
 
-            activePlayer.playVideo();
+            current.player.playVideo();
 
             showTapFeedback(
                 activeIndex,
@@ -1536,6 +1575,8 @@ function cleanupPlayers(){
     if(observer){
 
         observer.disconnect();
+
+        observer = null;
 
     }
 
@@ -1698,3 +1739,4 @@ function onYouTubeIframeAPIReady(){
 
 </body>
 </html>
+```
