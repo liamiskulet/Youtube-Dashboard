@@ -718,29 +718,26 @@ body{
 </div>
 
 <!-- ==========================================
-     SUPABASE
+     LIBRARIES
+========================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<!-- ==========================================
+     APPLICATION
 ========================================== -->
 
 <script>
 
+(function(){
+
+"use strict";
+
 /* ==========================================
-   SECURITY CONFIGURATION
+   CONFIG
 ========================================== */
-
-/*
-
-⚠️ IMPORTANT SECURITY WARNING
-
-NEVER SHARE THIS FILE
-WITH REAL KEYS INSIDE IT.
-
-For production:
-- Use environment variables
-- Restrict API keys
-- Use backend proxies
-- Restrict Supabase origins
-
-*/
 
 const CONFIG = {
 
@@ -751,65 +748,41 @@ const CONFIG = {
         "sb_publishable_W0tVnUX_Nju1OVAipUCoHQ_EmjUAQ7T",
 
     YOUTUBE_API_KEY:
-        "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc"
+        "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc",
+
+    MAX_RESULTS:
+        50
 
 };
-
-/* ==========================================
-   SUPABASE CLIENT (GLOBAL INITIALIZATION)
-========================================== */
-
-window.__SUPABASE_CLIENT__ =
-    window.__SUPABASE_CLIENT__ ||
-    window.supabase.createClient(
-        CONFIG.SUPABASE_URL,
-        CONFIG.SUPABASE_ANON_KEY
-    );
-
-const supabase =
-    window.__SUPABASE_CLIENT__;
-
-/* ==========================================
-   TYPES
-========================================== */
-
-/**
- * @typedef {Object} VideoItem
- * @property {string} videoId
- * @property {string} title
- * @property {string} channel
- */
-
-/* ==========================================
-   CONSTANTS
-========================================== */
-
-const MAX_RESULTS = 50;
 
 /* ==========================================
    ELEMENTS
 ========================================== */
 
-const feed =
-    document.getElementById("feed");
+const elements = {
 
-const searchInput =
-    document.getElementById("searchInput");
+    feed:
+        document.getElementById("feed"),
 
-const searchBtn =
-    document.getElementById("searchBtn");
+    searchInput:
+        document.getElementById("searchInput"),
 
-const searchHistory =
-    document.getElementById("searchHistory");
+    searchBtn:
+        document.getElementById("searchBtn"),
 
-const soundOverlay =
-    document.getElementById("soundOverlay");
+    searchHistory:
+        document.getElementById("searchHistory"),
 
-const scrollUp =
-    document.getElementById("scrollUp");
+    soundOverlay:
+        document.getElementById("soundOverlay"),
 
-const scrollDown =
-    document.getElementById("scrollDown");
+    scrollUp:
+        document.getElementById("scrollUp"),
+
+    scrollDown:
+        document.getElementById("scrollDown")
+
+};
 
 /* ==========================================
    APP STATE
@@ -820,78 +793,121 @@ const state = {
     currentQuery:
         "anime edits",
 
-    players: [],
+    currentUser:
+        null,
 
-    observer:null,
+    activeIndex:
+        -1,
 
-    activeIndex:-1,
+    globalMuted:
+        true,
 
-    globalMuted:true,
+    hasInteracted:
+        false,
 
-    hasInteracted:false,
+    observer:
+        null,
 
-    currentUser:null
+    players:
+        []
 
 };
 
 /* ==========================================
-   UTILS
+   UTILITIES
 ========================================== */
 
-const Utils = {
+const Utils = (()=>{
 
-    escapeHTML(str){
+    function escapeHTML(str=""){
 
         return str.replace(
             /[&<>"']/g,
-            m=>({
+            match=>({
 
-                '&':'&amp;',
-                '<':'&lt;',
-                '>':'&gt;',
-                '"':'&quot;',
-                "'":'&#39;'
+                "&":"&amp;",
+                "<":"&lt;",
+                ">":"&gt;",
+                '"':"&quot;",
+                "'":"&#39;"
 
-            })[m]
+            })[match]
         );
 
     }
 
-};
+    return {
+
+        escapeHTML
+
+    };
+
+})();
 
 /* ==========================================
    SUPABASE SERVICE
 ========================================== */
 
-const SupabaseService = {
+const SupabaseService = (()=>{
 
-    async initializeAuth(){
+    /*
+        TRUE SINGLETON
+        Prevents:
+        "Identifier 'supabase' has already been declared"
+    */
+
+    if(!window.__SUPABASE_CLIENT__){
+
+        window.__SUPABASE_CLIENT__ =
+            window.supabase.createClient(
+                CONFIG.SUPABASE_URL,
+                CONFIG.SUPABASE_ANON_KEY
+            );
+
+    }
+
+    const client =
+        window.__SUPABASE_CLIENT__;
+
+    async function initializeAuth(){
 
         try{
 
             const {
-                data
-            } = await supabase.auth.getUser();
+                data,
+                error
+            } = await client.auth.getUser();
+
+            if(error){
+
+                console.warn(error.message);
+
+                return;
+
+            }
 
             state.currentUser =
                 data.user || null;
 
         }catch(error){
 
-            console.error(error);
+            console.error(
+                "Auth initialization failed:",
+                error
+            );
 
         }
 
-    },
+    }
 
-    async saveSearch(term){
+    async function saveSearch(term){
 
         if(!state.currentUser)
             return;
 
         try{
 
-            await supabase
+            await client
                 .from("search_history")
                 .insert({
 
@@ -908,13 +924,16 @@ const SupabaseService = {
 
         }catch(error){
 
-            console.error(error);
+            console.error(
+                "Save search failed:",
+                error
+            );
 
         }
 
-    },
+    }
 
-    async getRecentSearches(){
+    async function getRecentSearches(){
 
         if(!state.currentUser)
             return [];
@@ -922,17 +941,30 @@ const SupabaseService = {
         try{
 
             const {
-                data
-            } = await supabase
+                data,
+                error
+            } = await client
                 .from("search_history")
                 .select(
-                    "search_term"
+                    "search_term, timestamp"
                 )
                 .eq(
                     "user_id",
                     state.currentUser.id
                 )
+                .order(
+                    "timestamp",
+                    { ascending:false }
+                )
                 .limit(10);
+
+            if(error){
+
+                console.error(error);
+
+                return [];
+
+            }
 
             return data || [];
 
@@ -946,22 +978,30 @@ const SupabaseService = {
 
     }
 
-};
+    return {
+
+        initializeAuth,
+        saveSearch,
+        getRecentSearches
+
+    };
+
+})();
 
 /* ==========================================
    YOUTUBE SERVICE
 ========================================== */
 
-const YouTubeService = {
+const YouTubeService = (()=>{
 
-    async search(query){
+    async function search(query){
 
         const endpoint =
             `https://www.googleapis.com/youtube/v3/search` +
             `?part=snippet` +
             `&type=video` +
             `&videoDuration=short` +
-            `&maxResults=${MAX_RESULTS}` +
+            `&maxResults=${CONFIG.MAX_RESULTS}` +
             `&q=${encodeURIComponent(query)}` +
             `&key=${CONFIG.YOUTUBE_API_KEY}`;
 
@@ -975,17 +1015,23 @@ const YouTubeService = {
 
     }
 
-};
+    return {
+
+        search
+
+    };
+
+})();
 
 /* ==========================================
-   UI
+   UI SERVICE
 ========================================== */
 
-const UI = {
+const UI = (()=>{
 
-    showLoader(){
+    function showLoader(){
 
-        feed.innerHTML = `
+        elements.feed.innerHTML = `
 
             <div class="loader-screen">
 
@@ -995,11 +1041,11 @@ const UI = {
 
         `;
 
-    },
+    }
 
-    showError(message){
+    function showError(message){
 
-        feed.innerHTML = `
+        elements.feed.innerHTML = `
 
             <div class="error">
 
@@ -1009,27 +1055,27 @@ const UI = {
 
         `;
 
-    },
+    }
 
-    async renderSearchHistory(){
+    async function renderSearchHistory(){
 
         const history =
             await SupabaseService
                 .getRecentSearches();
 
-        searchHistory.innerHTML =
+        elements.searchHistory.innerHTML =
             "";
 
         if(!history.length){
 
-            searchHistory.style.display =
+            elements.searchHistory.style.display =
                 "none";
 
             return;
 
         }
 
-        searchHistory.style.display =
+        elements.searchHistory.style.display =
             "flex";
 
         const uniqueTerms =
@@ -1037,22 +1083,23 @@ const UI = {
                 history.map(
                     item=>item.search_term
                 )
-            )];
+            )]
+            .slice(0,5);
 
         uniqueTerms.forEach(term=>{
 
-            const button =
+            const chip =
                 document.createElement(
                     "button"
                 );
 
-            button.className =
+            chip.className =
                 "history-chip glass";
 
-            button.textContent =
+            chip.textContent =
                 term;
 
-            button.addEventListener(
+            chip.addEventListener(
                 "click",
                 ()=>{
 
@@ -1061,23 +1108,31 @@ const UI = {
                 }
             );
 
-            searchHistory.appendChild(
-                button
+            elements.searchHistory.appendChild(
+                chip
             );
 
         });
 
     }
 
-};
+    return {
+
+        showLoader,
+        showError,
+        renderSearchHistory
+
+    };
+
+})();
 
 /* ==========================================
    PLAYER MANAGER
 ========================================== */
 
-const PlayerManager = {
+const PlayerManager = (()=>{
 
-    loadPlayer(index){
+    function loadPlayer(index){
 
         const item =
             state.players[index];
@@ -1118,6 +1173,7 @@ const PlayerManager = {
                     loop:1,
                     playlist:item.videoId,
                     mute:1,
+                    iv_load_policy:3,
 
                     enablejsapi:1,
 
@@ -1135,7 +1191,11 @@ const PlayerManager = {
                             state.activeIndex
                         ){
 
-                            event.target.playVideo();
+                            try{
+
+                                event.target.playVideo();
+
+                            }catch(err){}
 
                         }
 
@@ -1145,9 +1205,9 @@ const PlayerManager = {
 
             });
 
-    },
+    }
 
-    destroyPlayer(index){
+    function destroyPlayer(index){
 
         const item =
             state.players[index];
@@ -1177,9 +1237,9 @@ const PlayerManager = {
         item.initialized =
             false;
 
-    },
+    }
 
-    ensureSlidingWindow(centerIndex){
+    function ensureSlidingWindow(centerIndex){
 
         const allowed =
             new Set([
@@ -1197,7 +1257,7 @@ const PlayerManager = {
                 index < state.players.length
             ){
 
-                this.loadPlayer(index);
+                loadPlayer(index);
 
             }
 
@@ -1207,7 +1267,7 @@ const PlayerManager = {
 
             if(!allowed.has(index)){
 
-                this.destroyPlayer(index);
+                destroyPlayer(index);
 
             }
 
@@ -1215,17 +1275,25 @@ const PlayerManager = {
 
     }
 
-};
+    return {
+
+        loadPlayer,
+        destroyPlayer,
+        ensureSlidingWindow
+
+    };
+
+})();
 
 /* ==========================================
    FEED RENDERER
 ========================================== */
 
-const FeedRenderer = {
+const FeedRenderer = (()=>{
 
-    render(videos){
+    function render(videos){
 
-        feed.innerHTML = "";
+        elements.feed.innerHTML = "";
 
         state.players =
             videos.map(video => ({
@@ -1233,9 +1301,11 @@ const FeedRenderer = {
                 videoId:
                     video.id.videoId,
 
-                player:null,
+                player:
+                    null,
 
-                initialized:false
+                initialized:
+                    false
 
             }));
 
@@ -1326,7 +1396,9 @@ const FeedRenderer = {
 
             `;
 
-            feed.appendChild(section);
+            elements.feed.appendChild(
+                section
+            );
 
         });
 
@@ -1336,15 +1408,21 @@ const FeedRenderer = {
 
     }
 
-};
+    return {
+
+        render
+
+    };
+
+})();
 
 /* ==========================================
-   OBSERVER
+   OBSERVER MANAGER
 ========================================== */
 
-const ObserverManager = {
+const ObserverManager = (()=>{
 
-    setup(){
+    function setup(){
 
         if(state.observer){
 
@@ -1393,44 +1471,55 @@ const ObserverManager = {
 
     }
 
-};
+    return {
+
+        setup
+
+    };
+
+})();
 
 /* ==========================================
-   APP
+   APP CONTROLLER
 ========================================== */
 
-const App = {
+const App = (()=>{
 
-    async initialize(){
+    async function initialize(){
 
         await SupabaseService
             .initializeAuth();
 
         await UI.renderSearchHistory();
 
-        await this.search(
+        await search(
             state.currentQuery,
             false
         );
 
-        this.attachEvents();
+        attachEvents();
 
-    },
+    }
 
-    async search(
+    async function search(
         query,
         save=true
     ){
 
         state.currentQuery =
-            query;
+            query.trim();
+
+        if(!state.currentQuery)
+            return;
 
         UI.showLoader();
 
         if(save){
 
             await SupabaseService
-                .saveSearch(query);
+                .saveSearch(
+                    state.currentQuery
+                );
 
             await UI.renderSearchHistory();
 
@@ -1439,8 +1528,9 @@ const App = {
         try{
 
             const videos =
-                await YouTubeService
-                    .search(query);
+                await YouTubeService.search(
+                    state.currentQuery
+                );
 
             if(!videos.length){
 
@@ -1466,13 +1556,19 @@ const App = {
 
         }
 
-    },
+    }
 
-    activateVideo(index){
+    function activateVideo(index){
 
         if(
-            state.activeIndex ===
-            index
+            index < 0 ||
+            index >= state.players.length
+        ){
+            return;
+        }
+
+        if(
+            state.activeIndex === index
         ){
             return;
         }
@@ -1516,108 +1612,9 @@ const App = {
 
         });
 
-    },
+    }
 
-    attachEvents(){
-
-        searchBtn.addEventListener(
-            "click",
-            ()=>{
-
-                const value =
-                    searchInput.value.trim();
-
-                if(!value)
-                    return;
-
-                this.search(value);
-
-            }
-        );
-
-        searchInput.addEventListener(
-            "keydown",
-            e=>{
-
-                if(e.key === "Enter"){
-
-                    const value =
-                        searchInput.value.trim();
-
-                    if(!value)
-                        return;
-
-                    this.search(value);
-
-                }
-
-            }
-        );
-
-        scrollUp.addEventListener(
-            "click",
-            ()=>{
-
-                this.scrollTo(
-                    state.activeIndex - 1
-                );
-
-            }
-        );
-
-        scrollDown.addEventListener(
-            "click",
-            ()=>{
-
-                this.scrollTo(
-                    state.activeIndex + 1
-                );
-
-            }
-        );
-
-        document.body.addEventListener(
-            "click",
-            ()=>{
-
-                if(state.hasInteracted)
-                    return;
-
-                state.hasInteracted =
-                    true;
-
-                state.globalMuted =
-                    false;
-
-                soundOverlay.classList.add(
-                    "hidden"
-                );
-
-                const current =
-                    state.players[
-                        state.activeIndex
-                    ];
-
-                if(
-                    current &&
-                    current.player
-                ){
-
-                    try{
-
-                        current.player.unMute();
-
-                    }catch(err){}
-
-                }
-
-            },
-            { once:true }
-        );
-
-    },
-
-    scrollTo(index){
+    function scrollTo(index){
 
         if(index < 0)
             return;
@@ -1644,17 +1641,135 @@ const App = {
 
     }
 
-};
+    function enableSound(){
+
+        if(state.hasInteracted)
+            return;
+
+        state.hasInteracted =
+            true;
+
+        state.globalMuted =
+            false;
+
+        elements.soundOverlay.classList.add(
+            "hidden"
+        );
+
+        const current =
+            state.players[
+                state.activeIndex
+            ];
+
+        if(
+            current &&
+            current.player
+        ){
+
+            try{
+
+                current.player.unMute();
+
+            }catch(err){}
+
+        }
+
+    }
+
+    function attachEvents(){
+
+        elements.searchBtn.addEventListener(
+            "click",
+            ()=>{
+
+                const value =
+                    elements.searchInput.value.trim();
+
+                if(!value)
+                    return;
+
+                search(value);
+
+            }
+        );
+
+        elements.searchInput.addEventListener(
+            "keydown",
+            event=>{
+
+                if(event.key === "Enter"){
+
+                    const value =
+                        elements.searchInput.value.trim();
+
+                    if(!value)
+                        return;
+
+                    search(value);
+
+                }
+
+            }
+        );
+
+        elements.scrollUp.addEventListener(
+            "click",
+            ()=>{
+
+                scrollTo(
+                    state.activeIndex - 1
+                );
+
+            }
+        );
+
+        elements.scrollDown.addEventListener(
+            "click",
+            ()=>{
+
+                scrollTo(
+                    state.activeIndex + 1
+                );
+
+            }
+        );
+
+        document.body.addEventListener(
+            "click",
+            enableSound,
+            { once:true }
+        );
+
+        document.body.addEventListener(
+            "touchstart",
+            enableSound,
+            { once:true }
+        );
+
+    }
+
+    return {
+
+        initialize,
+        search,
+        activateVideo
+
+    };
+
+})();
 
 /* ==========================================
-   YOUTUBE API READY
+   YOUTUBE GLOBAL CALLBACK
 ========================================== */
 
-function onYouTubeIframeAPIReady(){
+window.onYouTubeIframeAPIReady =
+    function(){
 
-    App.initialize();
+        App.initialize();
 
-}
+    };
+
+})();
 
 </script>
 
