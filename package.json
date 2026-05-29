@@ -1,0 +1,14 @@
+{
+  "name": "liamiskulet-video-dashboard-v3",
+  "version": "1.0.0",
+  "description": "YouTube search and player dashboard using Data API v3",
+  "main": "index.html",
+  "keywords": [
+    "youtube",
+    "dashboard",
+    "liamiskulet",
+    "video"
+  ],
+  "author": "liamiskulet",
+  "license": "MIT"
+}
