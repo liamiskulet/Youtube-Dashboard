@@ -11,7 +11,7 @@
     viewport-fit=cover"
 />
 
-<title>Shorts Search Feed</title>
+<title>Premium Shorts Feed</title>
 
 <style>
 
@@ -31,6 +31,7 @@ body{
     height:100%;
     overflow:hidden;
     background:#000;
+
     font-family:
         Inter,
         -apple-system,
@@ -65,6 +66,8 @@ body{
     overflow-y:scroll;
 
     scroll-snap-type:y mandatory;
+
+    scroll-behavior:smooth;
 
     -webkit-overflow-scrolling:touch;
 
@@ -124,6 +127,27 @@ body{
 }
 
 /* =========================
+   GLASSMORPHISM
+========================= */
+
+.glass{
+    background:
+        rgba(0,0,0,.40);
+
+    backdrop-filter:
+        blur(15px);
+
+    -webkit-backdrop-filter:
+        blur(15px);
+
+    border:
+        1px solid rgba(255,255,255,.10);
+
+    box-shadow:
+        0 10px 40px rgba(0,0,0,.35);
+}
+
+/* =========================
    SEARCH HEADER
 ========================= */
 
@@ -166,21 +190,24 @@ body{
 
     padding:12px;
 
-    border-radius:22px;
+    border-radius:24px;
+
+    pointer-events:auto;
 
     background:
-        rgba(255,255,255,.12);
-
-    border:
-        1px solid rgba(255,255,255,.14);
+        rgba(0,0,0,.40);
 
     backdrop-filter:
-        blur(22px);
+        blur(15px);
+
+    -webkit-backdrop-filter:
+        blur(15px);
+
+    border:
+        1px solid rgba(255,255,255,.12);
 
     box-shadow:
         0 10px 40px rgba(0,0,0,.35);
-
-    pointer-events:auto;
 }
 
 .search-input{
@@ -209,15 +236,12 @@ body{
 
 .search-btn{
 
-    width:42px;
-    height:42px;
+    width:44px;
+    height:44px;
 
     border:none;
 
     border-radius:50%;
-
-    background:
-        rgba(255,255,255,.14);
 
     color:white;
 
@@ -233,16 +257,19 @@ body{
         transform .15s ease,
         background .15s ease;
 
+    background:
+        rgba(255,255,255,.10);
+
     backdrop-filter:
-        blur(10px);
+        blur(15px);
+
+    border:
+        1px solid rgba(255,255,255,.12);
 }
 
 .search-btn:active{
 
     transform:scale(.9);
-
-    background:
-        rgba(255,255,255,.22);
 
 }
 
@@ -268,13 +295,13 @@ body{
     border-radius:999px;
 
     background:
-        rgba(255,255,255,.12);
-
-    border:
-        1px solid rgba(255,255,255,.15);
+        rgba(0,0,0,.40);
 
     backdrop-filter:
-        blur(20px);
+        blur(15px);
+
+    border:
+        1px solid rgba(255,255,255,.12);
 
     color:white;
 
@@ -300,6 +327,102 @@ body{
     transform:
         translateX(-50%)
         translateY(-15px);
+
+}
+
+/* =========================
+   FLOATING ARROWS
+========================= */
+
+.scroll-controls{
+
+    position:fixed;
+
+    right:14px;
+    top:50%;
+
+    transform:
+        translateY(-50%);
+
+    z-index:999;
+
+    display:flex;
+    flex-direction:column;
+
+    gap:14px;
+}
+
+.scroll-btn{
+
+    width:58px;
+    height:58px;
+
+    border-radius:50%;
+
+    border:
+        1px solid rgba(255,255,255,.12);
+
+    background:
+        rgba(0,0,0,.42);
+
+    backdrop-filter:
+        blur(15px);
+
+    -webkit-backdrop-filter:
+        blur(15px);
+
+    color:white;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    cursor:pointer;
+
+    font-size:24px;
+
+    transition:
+        transform .18s ease,
+        background .18s ease,
+        opacity .18s ease;
+
+    box-shadow:
+        0 0 30px rgba(255,255,255,.08),
+        0 10px 30px rgba(0,0,0,.45);
+}
+
+.scroll-btn:hover{
+
+    transform:
+        scale(1.08);
+
+}
+
+.scroll-btn:active{
+
+    transform:
+        scale(.92);
+
+}
+
+@media(max-width:768px){
+
+    .scroll-controls{
+
+        right:10px;
+        top:auto;
+        bottom:140px;
+
+        transform:none;
+    }
+
+    .scroll-btn{
+
+        width:52px;
+        height:52px;
+
+        font-size:20px;
+    }
 
 }
 
@@ -432,11 +555,27 @@ body{
     bottom:95px;
 
     width:
-        calc(100% - 110px);
+        calc(100% - 120px);
 
     z-index:5;
 
     color:white;
+
+    padding:14px;
+
+    border-radius:22px;
+
+    background:
+        rgba(0,0,0,.40);
+
+    backdrop-filter:
+        blur(15px);
+
+    border:
+        1px solid rgba(255,255,255,.10);
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.35);
 }
 
 .channel{
@@ -514,13 +653,13 @@ body{
     justify-content:center;
 
     background:
-        rgba(255,255,255,.12);
-
-    border:
-        1px solid rgba(255,255,255,.14);
+        rgba(0,0,0,.40);
 
     backdrop-filter:
-        blur(18px);
+        blur(15px);
+
+    border:
+        1px solid rgba(255,255,255,.12);
 
     box-shadow:
         0 10px 28px rgba(0,0,0,.35);
@@ -532,14 +671,13 @@ body{
         background .15s ease;
 
     cursor:pointer;
+
+    color:white;
 }
 
 .action-btn:active{
 
     transform:scale(.88);
-
-    background:
-        rgba(255,255,255,.2);
 
 }
 
@@ -641,6 +779,8 @@ body{
 
 <div id="app">
 
+    <!-- SEARCH -->
+
     <div class="search-header">
 
         <div class="search-shell">
@@ -665,12 +805,36 @@ body{
 
     </div>
 
+    <!-- SOUND -->
+
     <div
         class="sound-overlay"
         id="soundOverlay"
     >
         Tap Screen for Sound 🔊
     </div>
+
+    <!-- FLOATING SCROLL -->
+
+    <div class="scroll-controls">
+
+        <button
+            class="scroll-btn"
+            id="scrollUp"
+        >
+            ↑
+        </button>
+
+        <button
+            class="scroll-btn"
+            id="scrollDown"
+        >
+            ↓
+        </button>
+
+    </div>
+
+    <!-- FEED -->
 
     <div id="feed">
 
@@ -717,6 +881,16 @@ const searchInput =
 const searchBtn =
     document.getElementById(
         "searchBtn"
+    );
+
+const scrollUp =
+    document.getElementById(
+        "scrollUp"
+    );
+
+const scrollDown =
+    document.getElementById(
+        "scrollDown"
     );
 
 /* =========================
@@ -1115,6 +1289,52 @@ function cleanupFarPlayers(centerIndex){
     });
 
 }
+
+/* =========================
+   SCROLL BUTTONS
+========================= */
+
+function scrollToVideo(index){
+
+    const sections =
+        document.querySelectorAll(
+            ".video-section"
+        );
+
+    const target =
+        sections[index];
+
+    if(!target)
+        return;
+
+    target.scrollIntoView({
+        behavior:"smooth",
+        block:"start"
+    });
+
+}
+
+scrollUp.addEventListener(
+    "click",
+    ()=>{
+
+        scrollToVideo(
+            activeIndex - 1
+        );
+
+    }
+);
+
+scrollDown.addEventListener(
+    "click",
+    ()=>{
+
+        scrollToVideo(
+            activeIndex + 1
+        );
+
+    }
+);
 
 /* =========================
    TAP PLAY / PAUSE
