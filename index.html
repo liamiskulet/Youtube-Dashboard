@@ -329,6 +329,32 @@ function playVideo(index) {
         if (!item.player || !item.player.playVideo) return;
 
         if (i === index) {
+            
+            // This safely forces the active video to unmute right as it plays
+            if (typeof item.player.unMute === 'function') {
+                item.player.unMute();
+            }
+            
+            item.player.playVideo();
+
+        } else {
+
+            item.player.pauseVideo();
+        }
+    });
+
+    currentPlaying = index;
+}
+
+function playVideo(index) {
+
+    if (currentPlaying === index) return;
+
+    players.forEach((item, i) => {
+
+        if (!item.player || !item.player.playVideo) return;
+
+        if (i === index) {
 
             item.player.playVideo();
 
