@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8" />
+
 <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
@@ -9,7 +11,31 @@
 
 <title>Premium Personalized Shorts Feed</title>
 
+<!-- ==========================================
+     GOOGLE FONTS
+========================================== -->
+
+<link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+/>
+
+<link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+/>
+
+<link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+/>
+
 <style>
+
+/* ==========================================
+   RESET
+========================================== */
 
 *{
     margin:0;
@@ -23,9 +49,37 @@ body{
     height:100%;
     overflow:hidden;
     background:#000;
-    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    -webkit-tap-highlight-color:transparent;
+
+    font-family:
+        "Inter",
+        sans-serif;
+
+    color:white;
+
+    -webkit-tap-highlight-color:
+        transparent;
 }
+
+/* ==========================================
+   ROOT
+========================================== */
+
+:root{
+
+    --glass-bg:
+        rgba(0,0,0,.38);
+
+    --glass-border:
+        rgba(255,255,255,.10);
+
+    --glass-shadow:
+        0 10px 40px rgba(0,0,0,.45);
+
+}
+
+/* ==========================================
+   APP
+========================================== */
 
 #app{
     position:relative;
@@ -35,24 +89,41 @@ body{
     background:#000;
 }
 
+/* ==========================================
+   FEED
+========================================== */
+
 #feed{
     width:100%;
     height:100vh;
+
     overflow-y:scroll;
+
     scroll-snap-type:y mandatory;
+
     scroll-behavior:smooth;
-    -webkit-overflow-scrolling:touch;
+
     overscroll-behavior-y:contain;
+
+    -webkit-overflow-scrolling:touch;
 }
 
 .video-section{
     position:relative;
+
     width:100%;
     height:100vh;
-    background:#000;
+
     overflow:hidden;
+
+    background:#000;
+
     scroll-snap-align:start;
 }
+
+/* ==========================================
+   PLAYER
+========================================== */
 
 .player-shell{
     position:absolute;
@@ -63,184 +134,494 @@ body{
 
 .player-shell iframe{
     position:absolute;
+
     top:50%;
     left:50%;
+
     width:56.25vh;
     height:100vh;
-    transform:translate(-50%,-50%);
+
+    transform:
+        translate(-50%,-50%);
+
     border:none;
+
     pointer-events:none;
 }
 
-@media (max-aspect-ratio:9/16){
+@media(max-aspect-ratio:9/16){
+
     .player-shell iframe{
+
         width:100vw;
         height:177.78vw;
+
     }
+
 }
+
+/* ==========================================
+   GLASS
+========================================== */
+
+.glass{
+    background:
+        var(--glass-bg);
+
+    border:
+        1px solid var(--glass-border);
+
+    backdrop-filter:
+        blur(16px);
+
+    -webkit-backdrop-filter:
+        blur(16px);
+
+    box-shadow:
+        var(--glass-shadow);
+}
+
+/* ==========================================
+   SEARCH HEADER
+========================================== */
 
 .search-header{
     position:fixed;
+
     top:0;
     left:0;
     right:0;
+
     z-index:1000;
-    padding:env(safe-area-inset-top) 14px 14px 14px;
-    background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent);
+
+    padding:
+        env(safe-area-inset-top)
+        14px
+        14px
+        14px;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(0,0,0,.55),
+            transparent
+        );
+
     pointer-events:none;
 }
 
 .search-shell{
     width:100%;
-    max-width:650px;
+    max-width:700px;
+
     margin:0 auto;
+
     display:flex;
     align-items:center;
     gap:12px;
+
     padding:12px;
-    border-radius:24px;
+
+    border-radius:26px;
+
     pointer-events:auto;
-    background:rgba(0,0,0,.40);
-    backdrop-filter:blur(15px);
-    border:1px solid rgba(255,255,255,.12);
-    box-shadow:0 10px 40px rgba(0,0,0,.35);
 }
 
 .search-input{
     flex:1;
+
     border:none;
     outline:none;
+
     background:transparent;
+
     color:white;
+
     font-size:15px;
     font-weight:500;
-    min-width:0;
 }
 
 .search-input::placeholder{
-    color:rgba(255,255,255,.65);
+    color:
+        rgba(255,255,255,.65);
 }
 
 .search-btn{
-    width:44px;
-    height:44px;
+    width:46px;
+    height:46px;
+
     border:none;
+
     border-radius:50%;
-    color:white;
+
     cursor:pointer;
+
     font-size:18px;
+
+    color:white;
+
     display:flex;
     align-items:center;
     justify-content:center;
-    background:rgba(255,255,255,.10);
-    backdrop-filter:blur(15px);
-    border:1px solid rgba(255,255,255,.12);
+
+    transition:
+        transform .15s ease;
 }
+
+.search-btn:hover{
+    transform:scale(1.06);
+}
+
+.search-btn:active{
+    transform:scale(.92);
+}
+
+/* ==========================================
+   SEARCH HISTORY
+========================================== */
 
 .search-history{
     position:fixed;
-    top:86px;
+
+    top:92px;
     left:50%;
+
     transform:translateX(-50%);
+
     width:calc(100% - 28px);
-    max-width:650px;
-    z-index:998;
+    max-width:700px;
+
+    z-index:999;
+
     display:flex;
     flex-wrap:wrap;
+
     gap:10px;
+
     padding:12px;
-    background:rgba(0,0,0,.32);
-    backdrop-filter:blur(15px);
-    border:1px solid rgba(255,255,255,.10);
-    border-radius:20px;
+
+    border-radius:22px;
 }
 
 .history-chip{
     border:none;
-    padding:10px 14px;
-    border-radius:999px;
+
     cursor:pointer;
+
     color:white;
+
     font-size:13px;
     font-weight:600;
-    background:rgba(255,255,255,.10);
-    border:1px solid rgba(255,255,255,.10);
+
+    padding:
+        10px 14px;
+
+    border-radius:999px;
+
+    transition:
+        transform .15s ease,
+        background .15s ease;
 }
+
+.history-chip:hover{
+    transform:scale(1.04);
+}
+
+/* ==========================================
+   META
+========================================== */
+
+.meta{
+    position:absolute;
+
+    left:16px;
+    bottom:95px;
+
+    width:
+        calc(100% - 120px);
+
+    z-index:5;
+
+    padding:16px;
+
+    border-radius:24px;
+}
+
+.channel{
+    font-size:14px;
+    font-weight:700;
+
+    margin-bottom:10px;
+
+    opacity:.9;
+}
+
+.title{
+    font-size:18px;
+    line-height:1.5;
+    font-weight:800;
+
+    display:-webkit-box;
+
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+
+    overflow:hidden;
+}
+
+/* ==========================================
+   SIDEBAR
+========================================== */
+
+.sidebar{
+    position:absolute;
+
+    right:12px;
+    bottom:95px;
+
+    z-index:50;
+
+    display:flex;
+    flex-direction:column;
+
+    gap:18px;
+}
+
+.action{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:7px;
+}
+
+.action-btn{
+    width:58px;
+    height:58px;
+
+    border-radius:50%;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    font-size:24px;
+
+    cursor:pointer;
+
+    transition:
+        transform .15s ease;
+}
+
+.action-btn:active{
+    transform:scale(.88);
+}
+
+.action-label{
+    font-size:12px;
+    font-weight:700;
+}
+
+/* ==========================================
+   GRADIENTS
+========================================== */
+
+.top-gradient{
+    position:absolute;
+
+    top:0;
+    left:0;
+    right:0;
+
+    height:180px;
+
+    z-index:2;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(0,0,0,.75),
+            transparent
+        );
+}
+
+.bottom-gradient{
+    position:absolute;
+
+    left:0;
+    right:0;
+    bottom:0;
+
+    height:48%;
+
+    z-index:2;
+
+    background:
+        linear-gradient(
+            to top,
+            rgba(0,0,0,.95),
+            rgba(0,0,0,.6),
+            transparent
+        );
+}
+
+/* ==========================================
+   SOUND
+========================================== */
 
 .sound-overlay{
     position:fixed;
+
     top:150px;
     left:50%;
+
     transform:translateX(-50%);
+
     z-index:9999;
-    padding:12px 18px;
+
+    padding:
+        12px 18px;
+
     border-radius:999px;
-    background:rgba(0,0,0,.40);
-    backdrop-filter:blur(15px);
-    border:1px solid rgba(255,255,255,.12);
-    color:white;
+
+    font-size:14px;
+    font-weight:600;
+
+    transition:
+        opacity .4s ease,
+        transform .4s ease;
+
+    pointer-events:none;
 }
 
 .sound-overlay.hidden{
     opacity:0;
+
+    transform:
+        translateX(-50%)
+        translateY(-15px);
 }
+
+/* ==========================================
+   SCROLL BUTTONS
+========================================== */
 
 .scroll-controls{
     position:fixed;
+
     right:14px;
     top:50%;
+
     transform:translateY(-50%);
+
     z-index:999;
+
     display:flex;
     flex-direction:column;
+
     gap:14px;
 }
 
 .scroll-btn{
     width:58px;
     height:58px;
+
     border-radius:50%;
-    border:1px solid rgba(255,255,255,.12);
-    background:rgba(0,0,0,.42);
-    backdrop-filter:blur(15px);
+
+    border:none;
+
     color:white;
-    cursor:pointer;
+
     font-size:24px;
+
+    cursor:pointer;
+
+    transition:
+        transform .15s ease;
 }
+
+.scroll-btn:hover{
+    transform:scale(1.06);
+}
+
+.scroll-btn:active{
+    transform:scale(.92);
+}
+
+/* ==========================================
+   LOADER
+========================================== */
 
 .loader-screen{
     width:100%;
     height:100vh;
+
     display:flex;
     align-items:center;
     justify-content:center;
-    background:#000;
 }
 
 .loader-ring{
-    width:78px;
-    height:78px;
+    width:80px;
+    height:80px;
+
     border-radius:50%;
-    border:5px solid rgba(255,255,255,.08);
-    border-top:5px solid white;
-    animation:spin .8s linear infinite;
+
+    border:
+        5px solid rgba(255,255,255,.08);
+
+    border-top:
+        5px solid white;
+
+    animation:
+        spin .8s linear infinite;
 }
 
 @keyframes spin{
+
     to{
         transform:rotate(360deg);
     }
+
 }
+
+/* ==========================================
+   ERROR
+========================================== */
 
 .error{
     width:100%;
     height:100vh;
+
     display:flex;
     align-items:center;
     justify-content:center;
-    color:white;
+
+    padding:30px;
+
+    text-align:center;
+
     font-size:18px;
     font-weight:700;
+}
+
+/* ==========================================
+   MOBILE
+========================================== */
+
+@media(max-width:768px){
+
+    .scroll-controls{
+        top:auto;
+        bottom:140px;
+
+        transform:none;
+    }
+
+    .scroll-btn{
+        width:52px;
+        height:52px;
+    }
+
 }
 
 </style>
@@ -250,9 +631,13 @@ body{
 
 <div id="app">
 
+    <!-- ==========================================
+         SEARCH
+    ========================================== -->
+
     <div class="search-header">
 
-        <div class="search-shell">
+        <div class="search-shell glass">
 
             <input
                 type="text"
@@ -264,8 +649,8 @@ body{
             />
 
             <button
-                class="search-btn"
                 id="searchBtn"
+                class="search-btn glass"
             >
                 🔍
             </button>
@@ -274,47 +659,74 @@ body{
 
     </div>
 
-    <div
-        class="search-history"
-        id="searchHistory"
-    ></div>
+    <!-- ==========================================
+         SEARCH HISTORY
+    ========================================== -->
 
     <div
-        class="sound-overlay"
+        id="searchHistory"
+        class="search-history glass"
+    ></div>
+
+    <!-- ==========================================
+         SOUND
+    ========================================== -->
+
+    <div
         id="soundOverlay"
+        class="sound-overlay glass"
     >
         Tap Screen For Sound 🔊
     </div>
 
+    <!-- ==========================================
+         SCROLL CONTROLS
+    ========================================== -->
+
     <div class="scroll-controls">
 
         <button
-            class="scroll-btn"
             id="scrollUp"
+            class="scroll-btn glass"
         >
             ↑
         </button>
 
         <button
-            class="scroll-btn"
             id="scrollDown"
+            class="scroll-btn glass"
         >
             ↓
         </button>
 
     </div>
 
+    <!-- ==========================================
+         FEED
+    ========================================== -->
+
     <div id="feed">
 
         <div class="loader-screen">
+
             <div class="loader-ring"></div>
+
         </div>
 
     </div>
 
 </div>
 
+<!-- ==========================================
+     SUPABASE
+========================================== -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- ==========================================
+     YOUTUBE IFRAME API
+========================================== -->
+
 <script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
@@ -323,525 +735,936 @@ body{
    SECURITY CONFIGURATION
 ========================================== */
 
-const SUPABASE_URL =
-    "https://cfmdniuossejstrywbbx.supabase.co";
+/*
 
-const SUPABASE_ANON_KEY =
-    "sb_publishable_W0tVnUX_Nju1OVAipUCoHQ_EmjUAQ7T";
+⚠️ IMPORTANT SECURITY WARNING
 
-const API_KEY =
-    "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc";
+NEVER SHARE THIS FILE
+WITH REAL KEYS INSIDE IT.
 
-const MAX_RESULTS = 50;
+For production:
+- Use environment variables
+- Restrict API keys
+- Use backend proxies
+- Restrict Supabase origins
+
+*/
+
+const CONFIG = {
+
+    SUPABASE_URL:
+        "https://cfmdniuossejstrywbbx.supabase.co",
+
+    SUPABASE_ANON_KEY:
+        "sb_publishable_W0tVnUX_Nju1OVAipUCoHQ_EmjUAQ7T",
+
+    YOUTUBE_API_KEY:
+        "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc"
+
+};
 
 /* ==========================================
    SUPABASE CLIENT (GLOBAL INITIALIZATION)
 ========================================== */
 
-window.supabase =
-    window.supabase ||
+window.__SUPABASE_CLIENT__ =
+    window.__SUPABASE_CLIENT__ ||
     window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY
+        CONFIG.SUPABASE_URL,
+        CONFIG.SUPABASE_ANON_KEY
     );
 
 const supabase =
-    window.supabase;
+    window.__SUPABASE_CLIENT__;
+
+/* ==========================================
+   TYPES
+========================================== */
+
+/**
+ * @typedef {Object} VideoItem
+ * @property {string} videoId
+ * @property {string} title
+ * @property {string} channel
+ */
+
+/* ==========================================
+   CONSTANTS
+========================================== */
+
+const MAX_RESULTS = 50;
 
 /* ==========================================
    ELEMENTS
 ========================================== */
 
-const feed = document.getElementById("feed");
-const soundOverlay = document.getElementById("soundOverlay");
-const searchInput = document.getElementById("searchInput");
-const searchBtn = document.getElementById("searchBtn");
-const scrollUp = document.getElementById("scrollUp");
-const scrollDown = document.getElementById("scrollDown");
-const searchHistoryContainer = document.getElementById("searchHistory");
+const feed =
+    document.getElementById("feed");
 
-let currentQuery = "anime edits";
-let players = [];
-let observer = null;
-let activeIndex = -1;
-let globalMuted = true;
-let hasUserInteracted = false;
-let currentUser = null;
+const searchInput =
+    document.getElementById("searchInput");
 
-async function initializeAuth(){
+const searchBtn =
+    document.getElementById("searchBtn");
 
-    try{
+const searchHistory =
+    document.getElementById("searchHistory");
 
-        const {
-            data,
-            error
-        } = await supabase.auth.getUser();
+const soundOverlay =
+    document.getElementById("soundOverlay");
 
-        if(error){
-            console.warn(error.message);
-            return;
+const scrollUp =
+    document.getElementById("scrollUp");
+
+const scrollDown =
+    document.getElementById("scrollDown");
+
+/* ==========================================
+   APP STATE
+========================================== */
+
+const state = {
+
+    currentQuery:
+        "anime edits",
+
+    players: [],
+
+    observer:null,
+
+    activeIndex:-1,
+
+    globalMuted:true,
+
+    hasInteracted:false,
+
+    currentUser:null
+
+};
+
+/* ==========================================
+   UTILS
+========================================== */
+
+const Utils = {
+
+    escapeHTML(str){
+
+        return str.replace(
+            /[&<>"']/g,
+            m=>({
+
+                '&':'&amp;',
+                '<':'&lt;',
+                '>':'&gt;',
+                '"':'&quot;',
+                "'":'&#39;'
+
+            })[m]
+        );
+
+    }
+
+};
+
+/* ==========================================
+   SUPABASE SERVICE
+========================================== */
+
+const SupabaseService = {
+
+    async initializeAuth(){
+
+        try{
+
+            const {
+                data
+            } = await supabase.auth.getUser();
+
+            state.currentUser =
+                data.user || null;
+
+        }catch(error){
+
+            console.error(error);
+
         }
 
-        currentUser = data.user || null;
+    },
 
-    }catch(error){
-        console.error(error);
-    }
+    async saveSearch(term){
 
-}
+        if(!state.currentUser)
+            return;
 
-async function saveSearch(term){
+        try{
 
-    if(!currentUser)
-        return;
+            await supabase
+                .from("search_history")
+                .insert({
 
-    try{
+                    user_id:
+                        state.currentUser.id,
 
-        await supabase
-            .from("search_history")
-            .insert({
-                user_id: currentUser.id,
-                search_term: term,
-                timestamp: new Date().toISOString()
-            });
+                    search_term:
+                        term,
 
-    }catch(error){
-        console.error(error);
-    }
+                    timestamp:
+                        new Date().toISOString()
 
-}
+                });
 
-async function fetchRecentSearches(){
+        }catch(error){
 
-    if(!currentUser)
-        return [];
+            console.error(error);
 
-    try{
+        }
 
-        const {
-            data,
-            error
-        } = await supabase
-            .from("search_history")
-            .select("search_term, timestamp")
-            .eq("user_id", currentUser.id)
-            .order("timestamp", { ascending:false })
-            .limit(10);
+    },
 
-        if(error)
+    async getRecentSearches(){
+
+        if(!state.currentUser)
             return [];
 
-        return data || [];
+        try{
 
-    }catch(error){
-        console.error(error);
-        return [];
+            const {
+                data
+            } = await supabase
+                .from("search_history")
+                .select(
+                    "search_term"
+                )
+                .eq(
+                    "user_id",
+                    state.currentUser.id
+                )
+                .limit(10);
+
+            return data || [];
+
+        }catch(error){
+
+            console.error(error);
+
+            return [];
+
+        }
+
     }
 
-}
+};
 
-async function renderSearchHistory(){
+/* ==========================================
+   YOUTUBE SERVICE
+========================================== */
 
-    const history =
-        await fetchRecentSearches();
+const YouTubeService = {
 
-    searchHistoryContainer.innerHTML = "";
+    async search(query){
 
-    if(!history.length){
-        searchHistoryContainer.style.display = "none";
-        return;
+        const endpoint =
+            `https://www.googleapis.com/youtube/v3/search` +
+            `?part=snippet` +
+            `&type=video` +
+            `&videoDuration=short` +
+            `&maxResults=${MAX_RESULTS}` +
+            `&q=${encodeURIComponent(query)}` +
+            `&key=${CONFIG.YOUTUBE_API_KEY}`;
+
+        const response =
+            await fetch(endpoint);
+
+        const data =
+            await response.json();
+
+        return data.items || [];
+
     }
 
-    searchHistoryContainer.style.display = "flex";
+};
 
-    const uniqueTerms =
-        [...new Set(history.map(item=>item.search_term))]
-        .slice(0,5);
+/* ==========================================
+   UI
+========================================== */
 
-    uniqueTerms.forEach(term=>{
+const UI = {
 
-        const chip = document.createElement("button");
+    showLoader(){
 
-        chip.className = "history-chip";
-        chip.textContent = term;
+        feed.innerHTML = `
 
-        chip.addEventListener("click", async ()=>{
+            <div class="loader-screen">
 
-            searchInput.value = term;
+                <div class="loader-ring"></div>
 
-            await performSearch(term,false);
+            </div>
+
+        `;
+
+    },
+
+    showError(message){
+
+        feed.innerHTML = `
+
+            <div class="error">
+
+                ${message}
+
+            </div>
+
+        `;
+
+    },
+
+    async renderSearchHistory(){
+
+        const history =
+            await SupabaseService
+                .getRecentSearches();
+
+        searchHistory.innerHTML =
+            "";
+
+        if(!history.length){
+
+            searchHistory.style.display =
+                "none";
+
+            return;
+
+        }
+
+        searchHistory.style.display =
+            "flex";
+
+        const uniqueTerms =
+            [...new Set(
+                history.map(
+                    item=>item.search_term
+                )
+            )];
+
+        uniqueTerms.forEach(term=>{
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+            button.className =
+                "history-chip glass";
+
+            button.textContent =
+                term;
+
+            button.addEventListener(
+                "click",
+                ()=>{
+
+                    App.search(term);
+
+                }
+            );
+
+            searchHistory.appendChild(
+                button
+            );
 
         });
 
-        searchHistoryContainer.appendChild(chip);
-
-    });
-
-}
-
-async function loadPersonalizedFeed(){
-
-    const history =
-        await fetchRecentSearches();
-
-    if(!history.length){
-
-        await performSearch(currentQuery,false);
-        return;
-
     }
 
-    const uniqueTerms =
-        [...new Set(history.map(item=>item.search_term))];
+};
 
-    const randomTerm =
-        uniqueTerms[Math.floor(Math.random()*uniqueTerms.length)];
+/* ==========================================
+   PLAYER MANAGER
+========================================== */
 
-    currentQuery = randomTerm;
-    searchInput.value = randomTerm;
+const PlayerManager = {
 
-    await performSearch(randomTerm,false);
+    loadPlayer(index){
 
-}
+        const item =
+            state.players[index];
 
-async function performSearch(query,saveToHistory=true){
+        if(!item)
+            return;
 
-    currentQuery = query.trim();
+        if(item.initialized)
+            return;
 
-    if(!currentQuery)
-        return;
+        const mount =
+            document.getElementById(
+                `player-${index}`
+            );
 
-    cleanupPlayers();
-    showLoader();
+        if(!mount)
+            return;
 
-    if(saveToHistory){
-        await saveSearch(currentQuery);
-        await renderSearchHistory();
-    }
+        item.initialized =
+            true;
 
-    try{
+        item.player =
+            new YT.Player(
+                `player-${index}`,
+                {
 
-        const endpoint =
-            `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=${MAX_RESULTS}&q=${encodeURIComponent(currentQuery)}&key=${API_KEY}`;
+                videoId:
+                    item.videoId,
 
-        const response = await fetch(endpoint);
-        const data = await response.json();
+                playerVars:{
 
-        if(!data.items?.length){
-            showError("No Shorts Found");
+                    autoplay:0,
+                    controls:0,
+                    modestbranding:1,
+                    rel:0,
+                    fs:0,
+                    playsinline:1,
+                    loop:1,
+                    playlist:item.videoId,
+                    mute:1,
+
+                    enablejsapi:1,
+
+                    origin:
+                        window.location.origin
+
+                },
+
+                events:{
+
+                    onReady:(event)=>{
+
+                        if(
+                            index ===
+                            state.activeIndex
+                        ){
+
+                            event.target.playVideo();
+
+                        }
+
+                    }
+
+                }
+
+            });
+
+    },
+
+    destroyPlayer(index){
+
+        const item =
+            state.players[index];
+
+        if(
+            !item ||
+            !item.player
+        ){
             return;
         }
 
-        renderFeed(data.items);
+        try{
 
-    }catch(error){
-        console.error(error);
-        showError("Failed To Load Videos");
+            item.player.stopVideo();
+
+        }catch(err){}
+
+        try{
+
+            item.player.destroy();
+
+        }catch(err){}
+
+        item.player =
+            null;
+
+        item.initialized =
+            false;
+
+    },
+
+    ensureSlidingWindow(centerIndex){
+
+        const allowed =
+            new Set([
+
+                centerIndex - 1,
+                centerIndex,
+                centerIndex + 1
+
+            ]);
+
+        allowed.forEach(index=>{
+
+            if(
+                index >= 0 &&
+                index < state.players.length
+            ){
+
+                this.loadPlayer(index);
+
+            }
+
+        });
+
+        state.players.forEach((_,index)=>{
+
+            if(!allowed.has(index)){
+
+                this.destroyPlayer(index);
+
+            }
+
+        });
+
     }
 
-}
+};
 
-function renderFeed(videos){
+/* ==========================================
+   FEED RENDERER
+========================================== */
 
-    feed.innerHTML = "";
-    activeIndex = -1;
+const FeedRenderer = {
 
-    players = videos.map(video => ({
-        id: video.id.videoId,
-        player: null,
-        initialized: false,
-        destroyed: false
-    }));
+    render(videos){
 
-    videos.forEach((video,index)=>{
+        feed.innerHTML = "";
 
-        const section = document.createElement("section");
+        state.players =
+            videos.map(video => ({
 
-        section.className = "video-section";
-        section.dataset.index = index;
+                videoId:
+                    video.id.videoId,
 
-        section.innerHTML = `
-            <div class="player-shell">
-                <div id="player-${index}"></div>
-            </div>
-        `;
+                player:null,
 
-        feed.appendChild(section);
+                initialized:false
 
-    });
+            }));
 
-    setupObserver();
-    activateVideo(0);
+        videos.forEach((video,index)=>{
 
-}
+            const section =
+                document.createElement(
+                    "section"
+                );
 
-function loadPlayer(index){
+            section.className =
+                "video-section";
 
-    const item = players[index];
+            section.dataset.index =
+                index;
 
-    if(!item || item.initialized)
-        return;
+            section.innerHTML = `
 
-    const mount = document.getElementById(`player-${index}`);
+                <div class="player-shell">
 
-    if(!mount)
-        return;
+                    <div id="player-${index}"></div>
 
-    item.initialized = true;
-    item.destroyed = false;
+                </div>
 
-    item.player = new YT.Player(`player-${index}`,{
+                <div class="top-gradient"></div>
 
-        videoId:item.id,
+                <div class="bottom-gradient"></div>
 
-        playerVars:{
-            autoplay:0,
-            controls:0,
-            modestbranding:1,
-            rel:0,
-            fs:0,
-            playsinline:1,
-            loop:1,
-            playlist:item.id,
-            mute:1,
-            iv_load_policy:3,
-            enablejsapi:1,
-            origin:window.location.origin
-        },
+                <div class="meta glass">
 
-        events:{
+                    <div class="channel">
 
-            onReady:(event)=>{
+                        @${Utils.escapeHTML(
+                            video.snippet.channelTitle
+                        )}
 
-                if(index === activeIndex){
+                    </div>
+
+                    <div class="title">
+
+                        ${Utils.escapeHTML(
+                            video.snippet.title
+                        )}
+
+                    </div>
+
+                </div>
+
+                <div class="sidebar">
+
+                    <div class="action">
+
+                        <div class="action-btn glass">
+                            ❤️
+                        </div>
+
+                        <div class="action-label">
+                            Like
+                        </div>
+
+                    </div>
+
+                    <div class="action">
+
+                        <div class="action-btn glass">
+                            💬
+                        </div>
+
+                        <div class="action-label">
+                            Comment
+                        </div>
+
+                    </div>
+
+                    <div class="action">
+
+                        <div class="action-btn glass">
+                            📤
+                        </div>
+
+                        <div class="action-label">
+                            Share
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+            feed.appendChild(section);
+
+        });
+
+        ObserverManager.setup();
+
+        App.activateVideo(0);
+
+    }
+
+};
+
+/* ==========================================
+   OBSERVER
+========================================== */
+
+const ObserverManager = {
+
+    setup(){
+
+        if(state.observer){
+
+            state.observer.disconnect();
+
+        }
+
+        state.observer =
+            new IntersectionObserver(
+
+            entries=>{
+
+                entries.forEach(entry=>{
+
+                    if(
+                        entry.isIntersecting &&
+                        entry.intersectionRatio >= .75
+                    ){
+
+                        App.activateVideo(
+                            Number(
+                                entry.target.dataset.index
+                            )
+                        );
+
+                    }
+
+                });
+
+            },
+            {
+                threshold:[0.75]
+            });
+
+        document
+            .querySelectorAll(
+                ".video-section"
+            )
+            .forEach(section=>{
+
+                state.observer.observe(
+                    section
+                );
+
+            });
+
+    }
+
+};
+
+/* ==========================================
+   APP
+========================================== */
+
+const App = {
+
+    async initialize(){
+
+        await SupabaseService
+            .initializeAuth();
+
+        await UI.renderSearchHistory();
+
+        await this.search(
+            state.currentQuery,
+            false
+        );
+
+        this.attachEvents();
+
+    },
+
+    async search(
+        query,
+        save=true
+    ){
+
+        state.currentQuery =
+            query;
+
+        UI.showLoader();
+
+        if(save){
+
+            await SupabaseService
+                .saveSearch(query);
+
+            await UI.renderSearchHistory();
+
+        }
+
+        try{
+
+            const videos =
+                await YouTubeService
+                    .search(query);
+
+            if(!videos.length){
+
+                UI.showError(
+                    "No Shorts Found"
+                );
+
+                return;
+
+            }
+
+            FeedRenderer.render(
+                videos
+            );
+
+        }catch(error){
+
+            console.error(error);
+
+            UI.showError(
+                "Failed To Load Videos"
+            );
+
+        }
+
+    },
+
+    activateVideo(index){
+
+        if(
+            state.activeIndex ===
+            index
+        ){
+            return;
+        }
+
+        state.activeIndex =
+            index;
+
+        PlayerManager
+            .ensureSlidingWindow(
+                index
+            );
+
+        state.players.forEach((item,i)=>{
+
+            if(!item.player)
+                return;
+
+            try{
+
+                if(i === index){
+
+                    item.player.playVideo();
+
+                    if(state.globalMuted){
+
+                        item.player.mute();
+
+                    }else{
+
+                        item.player.unMute();
+
+                    }
+
+                }else{
+
+                    item.player.pauseVideo();
+
+                }
+
+            }catch(err){}
+
+        });
+
+    },
+
+    attachEvents(){
+
+        searchBtn.addEventListener(
+            "click",
+            ()=>{
+
+                const value =
+                    searchInput.value.trim();
+
+                if(!value)
+                    return;
+
+                this.search(value);
+
+            }
+        );
+
+        searchInput.addEventListener(
+            "keydown",
+            e=>{
+
+                if(e.key === "Enter"){
+
+                    const value =
+                        searchInput.value.trim();
+
+                    if(!value)
+                        return;
+
+                    this.search(value);
+
+                }
+
+            }
+        );
+
+        scrollUp.addEventListener(
+            "click",
+            ()=>{
+
+                this.scrollTo(
+                    state.activeIndex - 1
+                );
+
+            }
+        );
+
+        scrollDown.addEventListener(
+            "click",
+            ()=>{
+
+                this.scrollTo(
+                    state.activeIndex + 1
+                );
+
+            }
+        );
+
+        document.body.addEventListener(
+            "click",
+            ()=>{
+
+                if(state.hasInteracted)
+                    return;
+
+                state.hasInteracted =
+                    true;
+
+                state.globalMuted =
+                    false;
+
+                soundOverlay.classList.add(
+                    "hidden"
+                );
+
+                const current =
+                    state.players[
+                        state.activeIndex
+                    ];
+
+                if(
+                    current &&
+                    current.player
+                ){
 
                     try{
 
-                        event.target.playVideo();
-
-                        if(globalMuted){
-                            event.target.mute();
-                        }else{
-                            event.target.unMute();
-                        }
+                        current.player.unMute();
 
                     }catch(err){}
 
                 }
 
-            }
+            },
+            { once:true }
+        );
 
-        }
+    },
 
-    });
+    scrollTo(index){
 
-}
-
-function destroyPlayer(index){
-
-    const item = players[index];
-
-    if(!item || !item.player)
-        return;
-
-    item.destroyed = true;
-
-    try{
-        item.player.stopVideo();
-    }catch(err){}
-
-    try{
-        item.player.destroy();
-    }catch(err){}
-
-    item.player = null;
-    item.initialized = false;
-
-}
-
-function ensureSlidingWindow(centerIndex){
-
-    const allowedIndexes = new Set([
-        centerIndex - 1,
-        centerIndex,
-        centerIndex + 1
-    ]);
-
-    allowedIndexes.forEach(index=>{
-
-        if(index >= 0 && index < players.length){
-            loadPlayer(index);
-        }
-
-    });
-
-    players.forEach((item,index)=>{
-
-        if(!allowedIndexes.has(index)){
-            destroyPlayer(index);
-        }
-
-    });
-
-}
-
-function setupObserver(){
-
-    if(observer)
-        observer.disconnect();
-
-    observer = new IntersectionObserver(entries=>{
-
-        entries.forEach(entry=>{
-
-            if(entry.isIntersecting && entry.intersectionRatio >= .75){
-
-                const index = Number(entry.target.dataset.index);
-                activateVideo(index);
-
-            }
-
-        });
-
-    },{
-        threshold:[0.75]
-    });
-
-    document
-        .querySelectorAll(".video-section")
-        .forEach(section=>{
-            observer.observe(section);
-        });
-
-}
-
-function activateVideo(index){
-
-    if(index < 0 || index >= players.length)
-        return;
-
-    if(activeIndex === index)
-        return;
-
-    activeIndex = index;
-
-    ensureSlidingWindow(index);
-
-    players.forEach((item,i)=>{
-
-        if(!item || item.destroyed || !item.player)
+        if(index < 0)
             return;
 
-        try{
+        if(index >= state.players.length)
+            return;
 
-            if(i === index){
+        const sections =
+            document.querySelectorAll(
+                ".video-section"
+            );
 
-                item.player.playVideo();
+        const target =
+            sections[index];
 
-                if(globalMuted){
-                    item.player.mute();
-                }else{
-                    item.player.unMute();
-                }
+        if(!target)
+            return;
 
-            }else{
-                item.player.pauseVideo();
-            }
+        target.scrollIntoView({
 
-        }catch(err){}
+            behavior:"smooth"
 
-    });
+        });
 
-}
-
-function cleanupPlayers(){
-
-    if(observer){
-        observer.disconnect();
-        observer = null;
     }
 
-    players.forEach((_,index)=>{
-        destroyPlayer(index);
-    });
+};
 
-    players = [];
-    activeIndex = -1;
-
-}
-
-function showLoader(){
-
-    feed.innerHTML = `
-        <div class="loader-screen">
-            <div class="loader-ring"></div>
-        </div>
-    `;
-
-}
-
-function showError(message){
-
-    feed.innerHTML = `
-        <div class="error">
-            ${message}
-        </div>
-    `;
-
-}
-
-function enableSound(){
-
-    if(hasUserInteracted)
-        return;
-
-    hasUserInteracted = true;
-    globalMuted = false;
-
-    soundOverlay.classList.add("hidden");
-
-}
-
-document.body.addEventListener("click",enableSound,{ once:true });
-document.body.addEventListener("touchstart",enableSound,{ once:true });
-
-async function triggerSearch(){
-
-    const query = searchInput.value.trim();
-
-    if(!query)
-        return;
-
-    await performSearch(query,true);
-
-}
-
-searchBtn.addEventListener("click",triggerSearch);
-
-searchInput.addEventListener("keydown",async e=>{
-
-    if(e.key === "Enter"){
-        await triggerSearch();
-    }
-
-});
-
-async function initializeApp(){
-
-    await initializeAuth();
-    await renderSearchHistory();
-    await loadPersonalizedFeed();
-
-}
+/* ==========================================
+   YOUTUBE API READY
+========================================== */
 
 function onYouTubeIframeAPIReady(){
-    initializeApp();
+
+    App.initialize();
+
 }
 
 </script>
 
 </body>
 </html>
-```
-
-The `const supabase =` declaration now exists only once globally, and the client uses a singleton initialization pattern to prevent redecla
