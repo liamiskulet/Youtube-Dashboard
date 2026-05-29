@@ -6,12 +6,10 @@
 
 <meta
     name="viewport"
-    content="width=device-width,
-    initial-scale=1.0,
-    viewport-fit=cover"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
 />
 
-<title>Premium Shorts Feed</title>
+<title>Premium Personalized Shorts Feed</title>
 
 <style>
 
@@ -892,7 +890,7 @@ body{
         class="sound-overlay"
         id="soundOverlay"
     >
-        Tap Screen for Sound 🔊
+        Tap Screen For Sound 🔊
     </div>
 
     <!-- FLOATING SCROLL -->
@@ -939,31 +937,43 @@ body{
 
 <script>
 
-/* =========================
-   ENV CONFIG
-========================= */
+/* ==========================================
+   SECURITY CONFIGURATION
+========================================== */
 
 /*
-    Replace with your real values
+
+⚠️ IMPORTANT SECURITY WARNING
+
+NEVER SHARE THIS FILE PUBLICLY
+IF THESE VALUES CONTAIN REAL KEYS.
+
+For production:
+- Use environment variables
+- Use a backend proxy
+- Restrict your YouTube API key
+- Restrict your Supabase Auth settings
+
 */
 
 const SUPABASE_URL =
-    "https://cfmdniuossejstrywbbx.supabase.co";
+    "YOUR_SUPABASE_URL";
 
 const SUPABASE_ANON_KEY =
-    "sb_publishable_W0tVnUX_Nju1OVAipUCoHQ_EmjUAQ7T";
-/* =========================
+    "YOUR_SUPABASE_ANON_KEY";
+
+/* ==========================================
    YOUTUBE CONFIG
-========================= */
+========================================== */
 
 const API_KEY =
     "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc";
 
 const MAX_RESULTS = 50;
 
-/* =========================
+/* ==========================================
    SUPABASE CLIENT
-========================= */
+========================================== */
 
 const supabase =
     window.supabase.createClient(
@@ -971,9 +981,9 @@ const supabase =
         SUPABASE_ANON_KEY
     );
 
-/* =========================
+/* ==========================================
    ELEMENTS
-========================= */
+========================================== */
 
 const feed =
     document.getElementById("feed");
@@ -1008,9 +1018,9 @@ const searchHistoryContainer =
         "searchHistory"
     );
 
-/* =========================
+/* ==========================================
    STATE
-========================= */
+========================================== */
 
 let currentQuery =
     "anime edits";
@@ -1027,11 +1037,11 @@ let hasUserInteracted = false;
 
 let currentUser = null;
 
-/* =========================
+/* ==========================================
    AUTH
-========================= */
+========================================== */
 
-async function getCurrentUser(){
+async function initializeAuth(){
 
     try{
 
@@ -1042,34 +1052,34 @@ async function getCurrentUser(){
 
         if(error){
 
-            console.error(error);
+            console.warn(
+                "Supabase auth warning:",
+                error.message
+            );
 
-            return null;
+            return;
 
         }
 
         currentUser =
-            data.user;
-
-        return data.user;
+            data.user || null;
 
     }catch(error){
 
-        console.error(error);
-
-        return null;
+        console.error(
+            "Auth init failed:",
+            error
+        );
 
     }
 
 }
 
-/* =========================
+/* ==========================================
    SEARCH HISTORY
-========================= */
+========================================== */
 
-async function saveSearchQuery(
-    searchTerm
-){
+async function saveSearch(term){
 
     if(!currentUser)
         return;
@@ -1084,7 +1094,7 @@ async function saveSearchQuery(
                     currentUser.id,
 
                 search_term:
-                    searchTerm,
+                    term,
 
                 timestamp:
                     new Date().toISOString()
@@ -1094,7 +1104,7 @@ async function saveSearchQuery(
     }catch(error){
 
         console.error(
-            "Failed to save search:",
+            "saveSearch failed:",
             error
         );
 
@@ -1102,7 +1112,7 @@ async function saveSearchQuery(
 
 }
 
-async function fetchSearchHistory(){
+async function fetchRecentSearches(){
 
     if(!currentUser)
         return [];
@@ -1125,7 +1135,7 @@ async function fetchSearchHistory(){
                 "timestamp",
                 { ascending:false }
             )
-            .limit(5);
+            .limit(10);
 
         if(error){
 
@@ -1150,7 +1160,7 @@ async function fetchSearchHistory(){
 async function renderSearchHistory(){
 
     const history =
-        await fetchSearchHistory();
+        await fetchRecentSearches();
 
     searchHistoryContainer.innerHTML =
         "";
@@ -1172,53 +1182,65 @@ async function renderSearchHistory(){
             history.map(
                 item=>item.search_term
             )
-        )];
+        )]
+        .slice(0,5);
 
     uniqueTerms.forEach(term=>{
 
-        const button =
+        const chip =
             document.createElement(
                 "button"
             );
 
-        button.className =
+        chip.className =
             "history-chip";
 
-        button.textContent =
+        chip.textContent =
             term;
 
-        button.addEventListener(
+        chip.addEventListener(
             "click",
-            ()=>{
+            async ()=>{
 
                 searchInput.value =
                     term;
 
-                performSearch(term);
+                await performSearch(
+                    term,
+                    false
+                );
 
             }
         );
 
         searchHistoryContainer.appendChild(
-            button
+            chip
         );
 
     });
 
 }
 
-/* =========================
-   PERSONALIZED STARTUP
-========================= */
+/* ==========================================
+   PERSONALIZED FEED
+========================================== */
 
-async function getPersonalizedSeedQuery(){
+async function loadPersonalizedFeed(){
 
     const history =
-        await fetchSearchHistory();
+        await fetchRecentSearches();
 
     if(!history.length){
 
-        return currentQuery;
+        searchInput.value =
+            currentQuery;
+
+        await performSearch(
+            currentQuery,
+            false
+        );
+
+        return;
 
     }
 
@@ -1229,23 +1251,34 @@ async function getPersonalizedSeedQuery(){
             )
         )];
 
-    const randomIndex =
-        Math.floor(
-            Math.random() *
-            uniqueTerms.length
-        );
+    const randomTerm =
+        uniqueTerms[
+            Math.floor(
+                Math.random() *
+                uniqueTerms.length
+            )
+        ];
 
-    return uniqueTerms[randomIndex];
+    currentQuery =
+        randomTerm;
+
+    searchInput.value =
+        randomTerm;
+
+    await performSearch(
+        randomTerm,
+        false
+    );
 
 }
 
-/* =========================
-   SEARCH
-========================= */
+/* ==========================================
+   SEARCH ENGINE
+========================================== */
 
 async function performSearch(
     query,
-    shouldSave = false
+    saveToHistory = true
 ){
 
     currentQuery =
@@ -1258,12 +1291,9 @@ async function performSearch(
 
     showLoader();
 
-    if(
-        shouldSave &&
-        currentUser
-    ){
+    if(saveToHistory){
 
-        await saveSearchQuery(
+        await saveSearch(
             currentQuery
         );
 
@@ -1305,16 +1335,16 @@ async function performSearch(
         console.error(error);
 
         showError(
-            "Failed to Load Videos"
+            "Failed To Load Videos"
         );
 
     }
 
 }
 
-/* =========================
-   RENDER
-========================= */
+/* ==========================================
+   RENDER FEED
+========================================== */
 
 function renderFeed(videos){
 
@@ -1441,13 +1471,13 @@ function renderFeed(videos){
 
     setupTapPlayback();
 
-    ensureSlidingWindow(0);
+    activateVideo(0);
 
 }
 
-/* =========================
+/* ==========================================
    PLAYER CREATION
-========================= */
+========================================== */
 
 function loadPlayer(index){
 
@@ -1495,6 +1525,8 @@ function loadPlayer(index){
 
                 enablejsapi:1,
 
+                /* FIXES CROSS-ORIGIN ERRORS */
+
                 origin:
                     window.location.origin
 
@@ -1540,7 +1572,7 @@ function loadPlayer(index){
                 onError:()=>{
 
                     console.warn(
-                        "Player Error:",
+                        "Player error:",
                         index
                     );
 
@@ -1552,9 +1584,9 @@ function loadPlayer(index){
 
 }
 
-/* =========================
-   DESTROY PLAYER
-========================= */
+/* ==========================================
+   PLAYER DESTROY
+========================================== */
 
 function destroyPlayer(index){
 
@@ -1598,22 +1630,24 @@ function destroyPlayer(index){
 
 }
 
-/* =========================
-   3 PLAYER WINDOW
-========================= */
+/* ==========================================
+   3-PLAYER SLIDING WINDOW
+========================================== */
 
 function ensureSlidingWindow(
     centerIndex
 ){
 
-    const allowed =
+    const allowedIndexes =
         new Set([
+
             centerIndex - 1,
             centerIndex,
             centerIndex + 1
+
         ]);
 
-    allowed.forEach(index=>{
+    allowedIndexes.forEach(index=>{
 
         if(
             index >= 0 &&
@@ -1628,7 +1662,7 @@ function ensureSlidingWindow(
 
     players.forEach((item,index)=>{
 
-        if(!allowed.has(index)){
+        if(!allowedIndexes.has(index)){
 
             destroyPlayer(index);
 
@@ -1638,9 +1672,9 @@ function ensureSlidingWindow(
 
 }
 
-/* =========================
+/* ==========================================
    OBSERVER
-========================= */
+========================================== */
 
 function setupObserver(){
 
@@ -1690,9 +1724,9 @@ function setupObserver(){
 
 }
 
-/* =========================
+/* ==========================================
    ACTIVATE VIDEO
-========================= */
+========================================== */
 
 function activateVideo(index){
 
@@ -1747,9 +1781,9 @@ function activateVideo(index){
 
 }
 
-/* =========================
-   SCROLL BUTTONS
-========================= */
+/* ==========================================
+   SCROLL CONTROLS
+========================================== */
 
 function scrollToVideo(index){
 
@@ -1802,9 +1836,9 @@ scrollDown.addEventListener(
     }
 );
 
-/* =========================
-   TAP PLAY / PAUSE
-========================= */
+/* ==========================================
+   TAP PLAYBACK
+========================================== */
 
 function setupTapPlayback(){
 
@@ -1906,9 +1940,9 @@ function showTapFeedback(
 
 }
 
-/* =========================
+/* ==========================================
    CLEANUP
-========================= */
+========================================== */
 
 function cleanupPlayers(){
 
@@ -1934,9 +1968,9 @@ function cleanupPlayers(){
 
 }
 
-/* =========================
+/* ==========================================
    SOUND
-========================= */
+========================================== */
 
 function enableSound(){
 
@@ -1982,9 +2016,9 @@ document.body.addEventListener(
     { once:true }
 );
 
-/* =========================
+/* ==========================================
    SEARCH EVENTS
-========================= */
+========================================== */
 
 async function triggerSearch(){
 
@@ -2019,9 +2053,9 @@ searchInput.addEventListener(
     }
 );
 
-/* =========================
+/* ==========================================
    HELPERS
-========================= */
+========================================== */
 
 function showLoader(){
 
@@ -2068,35 +2102,23 @@ function escapeHTML(str){
 
 }
 
-/* =========================
+/* ==========================================
    APP BOOT
-========================= */
+========================================== */
 
 async function initializeApp(){
 
-    await getCurrentUser();
+    await initializeAuth();
 
     await renderSearchHistory();
 
-    const personalizedQuery =
-        await getPersonalizedSeedQuery();
-
-    currentQuery =
-        personalizedQuery;
-
-    searchInput.value =
-        personalizedQuery;
-
-    await performSearch(
-        personalizedQuery,
-        false
-    );
+    await loadPersonalizedFeed();
 
 }
 
-/* =========================
-   API READY
-========================= */
+/* ==========================================
+   YOUTUBE API READY
+========================================== */
 
 function onYouTubeIframeAPIReady(){
 
