@@ -11,10 +11,6 @@
 
 <title>Premium Personalized Shorts Feed</title>
 
-<!-- ==========================================
-     GOOGLE FONTS
-========================================== -->
-
 <link
     rel="preconnect"
     href="https://fonts.googleapis.com"
@@ -34,7 +30,7 @@
 <style>
 
 /* ==========================================
-   RESET
+    RESET
 ========================================== */
 
 *{
@@ -61,7 +57,7 @@ body{
 }
 
 /* ==========================================
-   ROOT
+    ROOT
 ========================================== */
 
 :root{
@@ -78,7 +74,7 @@ body{
 }
 
 /* ==========================================
-   APP
+    APP
 ========================================== */
 
 #app{
@@ -90,7 +86,7 @@ body{
 }
 
 /* ==========================================
-   FEED
+    FEED
 ========================================== */
 
 #feed{
@@ -122,7 +118,7 @@ body{
 }
 
 /* ==========================================
-   PLAYER
+    PLAYER
 ========================================== */
 
 .player-shell{
@@ -161,7 +157,7 @@ body{
 }
 
 /* ==========================================
-   GLASS
+    GLASS
 ========================================== */
 
 .glass{
@@ -182,7 +178,7 @@ body{
 }
 
 /* ==========================================
-   SEARCH HEADER
+    SEARCH HEADER
 ========================================== */
 
 .search-header{
@@ -277,7 +273,7 @@ body{
 }
 
 /* ==========================================
-   SEARCH HISTORY
+    SEARCH HISTORY
 ========================================== */
 
 .search-history{
@@ -328,7 +324,7 @@ body{
 }
 
 /* ==========================================
-   META
+    META
 ========================================== */
 
 .meta{
@@ -370,7 +366,7 @@ body{
 }
 
 /* ==========================================
-   SIDEBAR
+    SIDEBAR
 ========================================== */
 
 .sidebar{
@@ -422,7 +418,7 @@ body{
 }
 
 /* ==========================================
-   GRADIENTS
+    GRADIENTS
 ========================================== */
 
 .top-gradient{
@@ -465,7 +461,7 @@ body{
 }
 
 /* ==========================================
-   SOUND
+    SOUND
 ========================================== */
 
 .sound-overlay{
@@ -502,7 +498,7 @@ body{
 }
 
 /* ==========================================
-   SCROLL BUTTONS
+    SCROLL BUTTONS
 ========================================== */
 
 .scroll-controls{
@@ -548,7 +544,7 @@ body{
 }
 
 /* ==========================================
-   LOADER
+    LOADER
 ========================================== */
 
 .loader-screen{
@@ -585,7 +581,7 @@ body{
 }
 
 /* ==========================================
-   ERROR
+    ERROR
 ========================================== */
 
 .error{
@@ -605,7 +601,7 @@ body{
 }
 
 /* ==========================================
-   MOBILE
+    MOBILE
 ========================================== */
 
 @media(max-width:768px){
@@ -631,10 +627,6 @@ body{
 
 <div id="app">
 
-    <!-- ==========================================
-         SEARCH
-    ========================================== -->
-
     <div class="search-header">
 
         <div class="search-shell glass">
@@ -659,18 +651,10 @@ body{
 
     </div>
 
-    <!-- ==========================================
-         SEARCH HISTORY
-    ========================================== -->
-
     <div
         id="searchHistory"
         class="search-history glass"
     ></div>
-
-    <!-- ==========================================
-         SOUND
-    ========================================== -->
 
     <div
         id="soundOverlay"
@@ -678,10 +662,6 @@ body{
     >
         Tap Screen For Sound 🔊
     </div>
-
-    <!-- ==========================================
-         SCROLL CONTROLS
-    ========================================== -->
 
     <div class="scroll-controls">
 
@@ -701,10 +681,6 @@ body{
 
     </div>
 
-    <!-- ==========================================
-         FEED
-    ========================================== -->
-
     <div id="feed">
 
         <div class="loader-screen">
@@ -717,17 +693,9 @@ body{
 
 </div>
 
-<!-- ==========================================
-     LIBRARIES
-========================================== -->
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="https://www.youtube.com/iframe_api"></script>
-
-<!-- ==========================================
-     APPLICATION
-========================================== -->
 
 <script>
 
@@ -736,7 +704,7 @@ body{
 "use strict";
 
 /* ==========================================
-   CONFIG
+    CONFIG
 ========================================== */
 
 const CONFIG = {
@@ -756,7 +724,7 @@ const CONFIG = {
 };
 
 /* ==========================================
-   ELEMENTS
+    ELEMENTS
 ========================================== */
 
 const elements = {
@@ -785,7 +753,7 @@ const elements = {
 };
 
 /* ==========================================
-   APP STATE
+    APP STATE
 ========================================== */
 
 const state = {
@@ -805,6 +773,9 @@ const state = {
     hasInteracted:
         false,
 
+    isPaused:
+        false,
+
     observer:
         null,
 
@@ -814,7 +785,7 @@ const state = {
 };
 
 /* ==========================================
-   UTILITIES
+    UTILITIES
 ========================================== */
 
 const Utils = (()=>{
@@ -845,16 +816,10 @@ const Utils = (()=>{
 })();
 
 /* ==========================================
-   SUPABASE SERVICE
+    SUPABASE SERVICE
 ========================================== */
 
 const SupabaseService = (()=>{
-
-    /*
-        TRUE SINGLETON
-        Prevents:
-        "Identifier 'supabase' has already been declared"
-    */
 
     if(!window.__SUPABASE_CLIENT__){
 
@@ -989,7 +954,7 @@ const SupabaseService = (()=>{
 })();
 
 /* ==========================================
-   YOUTUBE SERVICE
+    YOUTUBE SERVICE
 ========================================== */
 
 const YouTubeService = (()=>{
@@ -1024,7 +989,7 @@ const YouTubeService = (()=>{
 })();
 
 /* ==========================================
-   UI SERVICE
+    UI SERVICE
 ========================================== */
 
 const UI = (()=>{
@@ -1127,7 +1092,7 @@ const UI = (()=>{
 })();
 
 /* ==========================================
-   PLAYER MANAGER
+    PLAYER MANAGER
 ========================================== */
 
 const PlayerManager = (()=>{
@@ -1193,8 +1158,10 @@ const PlayerManager = (()=>{
 
                             try{
 
-                                event.target.playVideo();
-
+                                if(!state.isPaused) {
+                                    event.target.playVideo();
+                                }
+                                
                             }catch(err){}
 
                         }
@@ -1286,7 +1253,7 @@ const PlayerManager = (()=>{
 })();
 
 /* ==========================================
-   FEED RENDERER
+    FEED RENDERER
 ========================================== */
 
 const FeedRenderer = (()=>{
@@ -1417,7 +1384,7 @@ const FeedRenderer = (()=>{
 })();
 
 /* ==========================================
-   OBSERVER MANAGER
+    OBSERVER MANAGER
 ========================================== */
 
 const ObserverManager = (()=>{
@@ -1480,7 +1447,7 @@ const ObserverManager = (()=>{
 })();
 
 /* ==========================================
-   APP CONTROLLER
+    APP CONTROLLER
 ========================================== */
 
 const App = (()=>{
@@ -1558,6 +1525,20 @@ const App = (()=>{
 
     }
 
+    function togglePause() {
+        state.isPaused = !state.isPaused;
+        const current = state.players[state.activeIndex];
+        if (current && current.player) {
+            try {
+                if (state.isPaused) {
+                    current.player.pauseVideo();
+                } else {
+                    current.player.playVideo();
+                }
+            } catch (err) {}
+        }
+    }
+
     function activateVideo(index){
 
         if(
@@ -1590,7 +1571,11 @@ const App = (()=>{
 
                 if(i === index){
 
-                    item.player.playVideo();
+                    if (!state.isPaused) {
+                        item.player.playVideo();
+                    } else {
+                        item.player.pauseVideo();
+                    }
 
                     if(state.globalMuted){
 
@@ -1734,6 +1719,12 @@ const App = (()=>{
             }
         );
 
+        // Pause/Play Toggle Event
+        document.body.addEventListener("click", (e) => {
+            if (e.target.closest('.action-btn') || e.target.closest('.scroll-btn') || e.target.closest('.search-shell')) return;
+            togglePause();
+        });
+
         document.body.addEventListener(
             "click",
             enableSound,
@@ -1752,14 +1743,15 @@ const App = (()=>{
 
         initialize,
         search,
-        activateVideo
+        activateVideo,
+        togglePause
 
     };
 
 })();
 
 /* ==========================================
-   YOUTUBE GLOBAL CALLBACK
+    YOUTUBE GLOBAL CALLBACK
 ========================================== */
 
 window.onYouTubeIframeAPIReady =
