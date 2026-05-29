@@ -845,7 +845,19 @@ const SupabaseService = (()=>{
 
             if(error){
 
-                console.warn(error.message);
+                const { data, error } = await supabase.auth.getSession();
+
+// Only warn if there is an actual API/Network error
+if (error) {
+  console.error("Critical API Error:", error.message);
+} 
+// If data.session is null, it's NOT an error—it just means the user is anonymous.
+// Do nothing, or handle the anonymous state silently.
+else if (!data.session) {
+  console.log("Session not found (user is anonymous).");
+} else {
+  console.log("User is authenticated.");
+}
 
                 return;
 
