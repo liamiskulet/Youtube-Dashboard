@@ -64,14 +64,18 @@
        * @license
        * SPDX-License-Identifier: Apache-2.0
        *
-       * Single-file build of the original Vite/React app. Keep the sections below
-       * split by responsibility so this remains readable without the src folder.
+       * Single-file production build. Sections:
+       *   1. Constants & Config
+       *   2. Icons
+       *   3. Helpers / ApiService
+       *   4. Components: SearchHeader, VideoSection, Sidebar, ActionButton, CommentPanel, GridExplorer
+       *   5. App (root)
        */
 
       const { useEffect, useRef, useState } = React;
 
       // -----------------------------------------------------------------------
-      // Constants
+      // 1. Constants & Config
       // -----------------------------------------------------------------------
 
       const DEFAULT_SEARCH_QUERY = "anime edits";
@@ -144,49 +148,60 @@
       };
 
       // -----------------------------------------------------------------------
-      // Icons
+      // 2. Icons
       // -----------------------------------------------------------------------
 
       const ICONS = {
-        alert: ["M10.29 3.86 1.82 14a2 2 0 0 0 1.93 2.5h15.92a2 2 0 0 0 1.93-2.5l-1.82-14a2 2 0 0 0-3.86 0Z", "M12 9v4", "M12 17h.01"],
-        check: ["M20 6 9 17l-5-5"],
-        chevronDown: ["m6 9 6 6 6-6"],
-        chevronUp: ["m18 15-6-6-6 6"],
-        grid: ["M3 3h7v7H3z", "M14 3h7v7h-7z", "M14 14h7v7h-7z", "M3 14h7v7H3z"],
-        heart: ["M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"],
-        image: ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M3 11V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6", "m21 15-5-5L5 21", "m14 14-3-3-8 8"],
-        key: ["m15.5 7.5 2 2", "m11 11 4.5-4.5a5 5 0 1 1 2 2L13 13l-3 3H7v3H4v-3.5z"],
-        message: ["M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"],
-        pause: ["M6 4h4v16H6z", "M14 4h4v16h-4z"],
-        play: ["M5 5a2 2 0 0 1 3-1.73l11 7a2 2 0 0 1 0 3.46l-11 7A2 2 0 0 1 5 19z"],
-        refresh: ["M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", "M16 16h5v5"],
-        scroll: ["M8 21h8", "M12 17v4", "M7 4h10a2 2 0 0 1 2 2v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V6a2 2 0 0 1 2-2z"],
-        search: ["m21 21-4.34-4.34", "M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"],
-        send: ["m22 2-7 20-4-9-9-4Z", "M22 2 11 13"],
-        share: ["M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7", "M16 6l-4-4-4 4", "M12 2v13"],
-        sparkles: ["M9.94 15.5 8.5 21l-1.44-5.5L1.5 14l5.56-1.5L8.5 7l1.44 5.5L15.5 14z", "M19 8l-.8 3-3.2.8 3.2.8.8 3 .8-3 3.2-.8-3.2-.8z", "M19 2l-.5 2-2 .5 2 .5.5 2 .5-2 2-.5-2-.5z"],
-        volume: ["M11 5 6 9H2v6h4l5 4z", "M15.54 8.46a5 5 0 0 1 0 7.07", "M19.07 4.93a10 10 0 0 1 0 14.14"],
-        volumeX: ["M11 5 6 9H2v6h4l5 4z", "m23 9-6 6", "m17 9 6 6"],
-        x: ["M18 6 6 18", "M6 6l12 12"],
+        alert:      ["M10.29 3.86 1.82 14a2 2 0 0 0 1.93 2.5h15.92a2 2 0 0 0 1.93-2.5l-1.82-14a2 2 0 0 0-3.86 0Z", "M12 9v4", "M12 17h.01"],
+        check:      ["M20 6 9 17l-5-5"],
+        chevronDown:["m6 9 6 6 6-6"],
+        chevronUp:  ["m18 15-6-6-6 6"],
+        grid:       ["M3 3h7v7H3z", "M14 3h7v7h-7z", "M14 14h7v7h-7z", "M3 14h7v7H3z"],
+        heart:      ["M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"],
+        image:      ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M3 11V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6", "m21 15-5-5L5 21", "m14 14-3-3-8 8"],
+        key:        ["m15.5 7.5 2 2", "m11 11 4.5-4.5a5 5 0 1 1 2 2L13 13l-3 3H7v3H4v-3.5z"],
+        message:    ["M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"],
+        pause:      ["M6 4h4v16H6z", "M14 4h4v16h-4z"],
+        play:       ["M5 5a2 2 0 0 1 3-1.73l11 7a2 2 0 0 1 0 3.46l-11 7A2 2 0 0 1 5 19z"],
+        refresh:    ["M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", "M16 16h5v5"],
+        scroll:     ["M8 21h8", "M12 17v4", "M7 4h10a2 2 0 0 1 2 2v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V6a2 2 0 0 1 2-2z"],
+        search:     ["m21 21-4.34-4.34", "M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"],
+        send:       ["m22 2-7 20-4-9-9-4Z", "M22 2 11 13"],
+        share:      ["M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7", "M16 6l-4-4-4 4", "M12 2v13"],
+        sparkles:   ["M9.94 15.5 8.5 21l-1.44-5.5L1.5 14l5.56-1.5L8.5 7l1.44 5.5L15.5 14z", "M19 8l-.8 3-3.2.8 3.2.8.8 3 .8-3 3.2-.8-3.2-.8z", "M19 2l-.5 2-2 .5 2 .5.5 2 .5-2 2-.5-2-.5z"],
+        volume:     ["M11 5 6 9H2v6h4l5 4z", "M15.54 8.46a5 5 0 0 1 0 7.07", "M19.07 4.93a10 10 0 0 1 0 14.14"],
+        volumeX:    ["M11 5 6 9H2v6h4l5 4z", "m23 9-6 6", "m17 9 6 6"],
+        x:          ["M18 6 6 18", "M6 6l12 12"],
       };
 
       function Icon({ name, className = "w-5 h-5", fill = "none" }) {
         return (
-          <svg className={className} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            {(ICONS[name] || []).map((d) => <path key={d} d={d} />)}
+          <svg
+            className={className}
+            viewBox="0 0 24 24"
+            fill={fill}
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {(ICONS[name] || []).map((d) => (
+              <path key={d} d={d} />
+            ))}
           </svg>
         );
       }
 
       // -----------------------------------------------------------------------
-      // Helpers
+      // 3. Helpers / ApiService
       // -----------------------------------------------------------------------
 
       function shuffle(items) {
         const copy = [...items];
-        for (let index = copy.length - 1; index > 0; index -= 1) {
-          const swapIndex = Math.floor(Math.random() * (index + 1));
-          [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
         }
         return copy;
       }
@@ -206,70 +221,74 @@
       }
 
       function createEngagementMetrics() {
-        const likes = randomBetween(50_000, 3_000_000);
+        const likes         = randomBetween(50_000, 3_000_000);
         const commentsCount = randomBetween(500, 100_000);
-        const shares = randomBetween(100, 50_000);
-        const views = randomBetween(100_000, 20_000_000);
-
+        const shares        = randomBetween(100, 50_000);
+        const views         = randomBetween(100_000, 20_000_000);
         return {
           likes,
-          likesLabel: formatMetric(likes),
+          likesLabel:    formatMetric(likes),
           commentsCount,
           commentsLabel: formatMetric(commentsCount),
           shares,
-          sharesLabel: formatMetric(shares),
+          sharesLabel:   formatMetric(shares),
           views,
-          viewsLabel: formatMetric(views),
+          viewsLabel:    formatMetric(views),
         };
       }
 
-      function buildSearchUrl(query, apiKey, pageToken = "") {
-        const params = new URLSearchParams({
-          part: "snippet",
-          type: "video",
-          videoDuration: "short",
-          videoEmbeddable: "true",
-          maxResults: String(SEARCH_BATCH_SIZE),
-          q: `${query} shorts`,
-          key: apiKey,
-        });
+      // ApiService — encapsulates all YouTube Data API v3 interaction
+      const ApiService = {
+        buildSearchUrl(query, apiKey, pageToken = "") {
+          const params = new URLSearchParams({
+            part:           "snippet",
+            type:           "video",
+            videoDuration:  "short",
+            videoEmbeddable:"true",
+            maxResults:     String(SEARCH_BATCH_SIZE),
+            q:              `${query} shorts`,
+            key:            apiKey,
+          });
+          if (pageToken) params.set("pageToken", pageToken);
+          return `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
+        },
 
-        if (pageToken) {
-          params.set("pageToken", pageToken);
-        }
+        formatApiVideo(item) {
+          const videoId = item?.id?.videoId;
+          if (!videoId || item?.id?.kind !== "youtube#video") return null;
+          if (["live", "upcoming"].includes(item?.snippet?.liveBroadcastContent)) return null;
+          return {
+            id:      videoId,
+            title:   item.snippet.title,
+            channel: item.snippet.channelTitle || "CreativeCreator",
+            liked:   false,
+            ...createEngagementMetrics(),
+          };
+        },
 
-        return `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
-      }
-
-      function formatApiVideo(item) {
-        const videoId = item?.id?.videoId;
-        if (!videoId || item?.id?.kind !== "youtube#video") return null;
-        if (["live", "upcoming"].includes(item?.snippet?.liveBroadcastContent)) return null;
-
-        return {
-          id: videoId,
-          title: item.snippet.title,
-          channel: item.snippet.channelTitle || "CreativeCreator",
-          liked: false,
-          ...createEngagementMetrics(),
-        };
-      }
+        async fetchBatch(query, apiKey, pageToken = "") {
+          const url      = ApiService.buildSearchUrl(query, apiKey, pageToken);
+          const response = await fetch(url);
+          const data     = await response.json();
+          if (data.error) throw new Error(data.error.message);
+          return data;
+        },
+      };
 
       // -----------------------------------------------------------------------
-      // Components
+      // 4. Components
       // -----------------------------------------------------------------------
 
+      // -- SearchHeader --------------------------------------------------------
       function SearchHeader({ currentQuery, onSearch, apiKey, onChangeApiKey, isLoading, isUsingFallback }) {
-        const [inputValue, setInputValue] = useState(currentQuery);
-        const [showKeyPanel, setShowKeyPanel] = useState(false);
-        const [tempKey, setTempKey] = useState(apiKey);
+        const [inputValue,    setInputValue]    = useState(currentQuery);
+        const [showKeyPanel,  setShowKeyPanel]  = useState(false);
+        const [tempKey,       setTempKey]       = useState(apiKey);
 
-        useEffect(() => {
-          setInputValue(currentQuery);
-        }, [currentQuery]);
+        useEffect(() => { setInputValue(currentQuery); }, [currentQuery]);
 
-        function handleSubmit(event) {
-          event.preventDefault();
+        function handleSubmit(e) {
+          e.preventDefault();
           if (inputValue.trim()) onSearch(inputValue.trim());
         }
 
@@ -282,6 +301,7 @@
           <div className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/50 to-transparent pt-safe pb-4 px-4 pointer-events-none">
             <div className="max-w-md mx-auto pointer-events-auto">
               <div className="flex items-center gap-3">
+                {/* Brand */}
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white font-bold text-xs tracking-wider uppercase select-none">
                   <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center shadow-[0_0_10px_rgba(99,102,241,0.6)]">
                     <div className="w-1.5 h-1.5 bg-white rounded-full" />
@@ -289,6 +309,7 @@
                   <span className="tracking-widest">AETHER.REELS</span>
                 </div>
 
+                {/* Search form */}
                 <form onSubmit={handleSubmit} className="flex-1 relative flex items-center">
                   <div className="w-full relative">
                     <input
@@ -296,20 +317,20 @@
                       type="text"
                       placeholder="Query system files..."
                       value={inputValue}
-                      onChange={(event) => setInputValue(event.target.value)}
+                      onChange={(e) => setInputValue(e.target.value)}
                       className="w-full bg-zinc-900/40 backdrop-blur-xl border border-white/10 focus:border-indigo-500 text-white text-xs font-semibold rounded-full py-2 pl-9 pr-9 outline-none transition-all focus:ring-1 focus:ring-indigo-500/30"
                     />
                     <Icon name="search" className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    {isLoading && <Icon name="refresh" className="w-3.5 h-3.5 text-indigo-400 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />}
+                    {isLoading && (
+                      <Icon name="refresh" className="w-3.5 h-3.5 text-indigo-400 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />
+                    )}
                   </div>
                 </form>
 
+                {/* API key toggle */}
                 <button
                   id="api-key-toggle-btn"
-                  onClick={() => {
-                    setTempKey(apiKey);
-                    setShowKeyPanel(!showKeyPanel);
-                  }}
+                  onClick={() => { setTempKey(apiKey); setShowKeyPanel(!showKeyPanel); }}
                   title="Configure API Credentials"
                   className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all ${
                     isUsingFallback
@@ -326,6 +347,7 @@
                 <span>Watching: {currentQuery}</span>
               </div>
 
+              {/* API key panel */}
               {showKeyPanel && (
                 <div className="mt-3 p-4 rounded-2xl bg-neutral-900/95 backdrop-blur-2xl border border-white/15 shadow-2xl">
                   <h4 className="text-white text-xs font-bold tracking-wider uppercase mb-1 flex items-center gap-2">
@@ -341,7 +363,7 @@
                       type="password"
                       placeholder="Paste API key here..."
                       value={tempKey}
-                      onChange={(event) => setTempKey(event.target.value)}
+                      onChange={(e) => setTempKey(e.target.value)}
                       className="flex-1 bg-white/5 border border-white/10 text-white text-xs rounded-lg px-3 py-2 outline-none focus:border-indigo-500/50"
                     />
                     <button
@@ -367,36 +389,59 @@
         );
       }
 
+      // -- VideoSection --------------------------------------------------------
       function VideoSection({ video, index, isActive, shouldLoadEmbed, isMuted, onTapMedia }) {
-        const [isPlaying, setIsPlaying] = useState(isActive);
+        const [isPlaying,    setIsPlaying]    = useState(isActive);
         const [feedbackIcon, setFeedbackIcon] = useState(null);
-        const [isBuffering, setIsBuffering] = useState(true);
+        const [isBuffering,  setIsBuffering]  = useState(true);
 
         useEffect(() => {
           setIsPlaying(isActive);
           if (!isActive) return;
           setIsBuffering(true);
-          const timer = setTimeout(() => setIsBuffering(false), 950);
-          return () => clearTimeout(timer);
+          const t = setTimeout(() => setIsBuffering(false), 950);
+          return () => clearTimeout(t);
         }, [isActive]);
 
         function handleMediaTap() {
-          const nextState = !isPlaying;
-          setIsPlaying(nextState);
-          setFeedbackIcon(nextState ? "play" : "pause");
+          const next = !isPlaying;
+          setIsPlaying(next);
+          setFeedbackIcon(next ? "play" : "pause");
           onTapMedia();
           setTimeout(() => setFeedbackIcon(null), 550);
         }
 
-        const ytQuery = `autoplay=${isActive && isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${video.id}&enablejsapi=1&playsinline=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1`;
+        const ytQuery = [
+          `autoplay=${isActive && isPlaying ? 1 : 0}`,
+          `mute=${isMuted ? 1 : 0}`,
+          "controls=0",
+          "loop=1",
+          `playlist=${video.id}`,
+          "enablejsapi=1",
+          "playsinline=1",
+          "modestbranding=1",
+          "rel=0",
+          "showinfo=0",
+          "iv_load_policy=3",
+          "disablekb=1",
+        ].join("&");
+
         const embedUrl = `https://www.youtube.com/embed/${video.id}?${ytQuery}`;
 
         return (
-          <div id={`video-section-${index}`} className="relative w-full h-screen bg-black overflow-hidden flex items-center justify-center snap-start">
+          <div
+            id={`video-section-${index}`}
+            className="relative w-full h-screen bg-black overflow-hidden flex items-center justify-center snap-start"
+          >
+            {/* Background glow */}
             <div className="absolute inset-0 bg-neutral-950 pointer-events-none z-0">
-              <div className="absolute inset-x-0 top-1/4 h-1/2 opacity-35 blur-[120px]" style={{ backgroundImage: "radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, transparent 70%)" }} />
+              <div
+                className="absolute inset-x-0 top-1/4 h-1/2 opacity-35 blur-[120px]"
+                style={{ backgroundImage: "radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%)" }}
+              />
             </div>
 
+            {/* Player container */}
             <div className="relative w-full h-full max-w-[56.25vh] bg-black shadow-2xl flex items-center justify-center z-10 transition-all duration-500">
               {shouldLoadEmbed ? (
                 <iframe
@@ -415,8 +460,15 @@
                 </div>
               )}
 
-              <div id={`tap-layer-${index}`} onClick={handleMediaTap} data-tap-layer="true" className="absolute inset-0 cursor-pointer z-20 select-none active:bg-white/5 transition-colors duration-100" />
+              {/* Tap layer */}
+              <div
+                id={`tap-layer-${index}`}
+                onClick={handleMediaTap}
+                data-tap-layer="true"
+                className="absolute inset-0 cursor-pointer z-20 select-none active:bg-white/5 transition-colors duration-100"
+              />
 
+              {/* Play/pause feedback */}
               {feedbackIcon && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 select-none">
                   <div className="w-20 h-20 rounded-full bg-black/50 border border-white/20 flex items-center justify-center text-white scale-[1.3] opacity-0 animate-ping">
@@ -425,15 +477,18 @@
                 </div>
               )}
 
+              {/* Gradient overlays */}
               <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-black/80 via-black/35 to-transparent pointer-events-none z-20" />
               <div className="absolute bottom-0 inset-x-0 h-80 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none z-20" />
 
+              {/* Buffering spinner */}
               {isBuffering && isActive && (
                 <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center pointer-events-none z-30">
                   <Icon name="refresh" className="w-8 h-8 text-indigo-400 animate-spin" />
                 </div>
               )}
 
+              {/* Video info overlay */}
               <div className="absolute left-6 bottom-8 right-16 z-30 text-white flex flex-col gap-2.5 pointer-events-none">
                 <div className="flex items-center">
                   <span className="bg-gradient-to-br from-indigo-500/90 to-purple-600/90 text-white font-bold text-[10px] tracking-widest uppercase px-3.5 py-1.5 rounded-xl border border-indigo-400/20 shadow-[0_0_12px_rgba(99,102,241,0.3)] pointer-events-auto cursor-pointer flex items-center gap-1.5 transition-all active:scale-95">
@@ -464,64 +519,7 @@
         );
       }
 
-      function Sidebar({ video, index, onLikeToggle, onOpenComments, onShare, isMuted, onMuteToggle, viewMode, onViewModeToggle }) {
-        const [likeAnimate, setLikeAnimate] = useState(false);
-
-        function handleLikeClick() {
-          setLikeAnimate(true);
-          onLikeToggle();
-          setTimeout(() => setLikeAnimate(false), 450);
-        }
-
-        return (
-          <div className="absolute right-4 bottom-28 z-30 flex flex-col items-center gap-4 pointer-events-auto select-none">
-            <ActionButton
-              id={`sound-btn-${index}`}
-              title={isMuted ? "Unmute Audio" : "Mute Audio"}
-              label={isMuted ? "Silent" : "Audio"}
-              icon={isMuted ? "volumeX" : "volume"}
-              active={!isMuted}
-              onClick={onMuteToggle}
-            />
-
-            <ActionButton
-              id={`like-btn-${index}`}
-              title="Like Video"
-              label={video.likesLabel}
-              icon="heart"
-              active={video.liked}
-              extraClass={likeAnimate ? "animate-bounce" : ""}
-              fill={video.liked ? "currentColor" : "none"}
-              onClick={handleLikeClick}
-            />
-
-            <ActionButton
-              id={`comments-btn-${index}`}
-              title="Open Comments"
-              label={video.commentsLabel}
-              icon="message"
-              onClick={onOpenComments}
-            />
-
-            <ActionButton id={`share-btn-${index}`} title="Share Link" label={video.sharesLabel} icon="share" onClick={onShare} />
-
-            <div className="hidden sm:flex flex-col items-center">
-              <button
-                id="viewmode-toggle-btn"
-                onClick={onViewModeToggle}
-                title={viewMode === "feed" ? "Switch to Grid Explorer" : "Switch to Reel Feed"}
-                className="w-12 h-12 rounded-xl flex items-center justify-center bg-zinc-900/80 border border-zinc-800 hover:border-indigo-500 text-indigo-400 hover:text-indigo-300 backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95"
-              >
-                <Icon name={viewMode === "feed" ? "grid" : "scroll"} className="w-5 h-5" />
-              </button>
-              <span className="text-[9px] text-indigo-400 font-extrabold font-mono mt-1 shadow-sm tracking-widest uppercase text-center max-w-[56px] leading-3">
-                {viewMode === "feed" ? "Grid" : "Feed"}
-              </span>
-            </div>
-          </div>
-        );
-      }
-
+      // -- ActionButton --------------------------------------------------------
       function ActionButton({ id, title, label, icon, active = false, extraClass = "", fill = "none", onClick }) {
         return (
           <div className="flex flex-col items-center">
@@ -544,18 +542,80 @@
         );
       }
 
+      // -- Sidebar -------------------------------------------------------------
+      function Sidebar({ video, index, onLikeToggle, onOpenComments, onShare, isMuted, onMuteToggle, viewMode, onViewModeToggle }) {
+        const [likeAnimate, setLikeAnimate] = useState(false);
+
+        function handleLikeClick() {
+          setLikeAnimate(true);
+          onLikeToggle();
+          setTimeout(() => setLikeAnimate(false), 450);
+        }
+
+        return (
+          <div className="absolute right-4 bottom-28 z-30 flex flex-col items-center gap-4 pointer-events-auto select-none">
+            <ActionButton
+              id={`sound-btn-${index}`}
+              title={isMuted ? "Unmute Audio" : "Mute Audio"}
+              label={isMuted ? "Silent" : "Audio"}
+              icon={isMuted ? "volumeX" : "volume"}
+              active={!isMuted}
+              onClick={onMuteToggle}
+            />
+            <ActionButton
+              id={`like-btn-${index}`}
+              title="Like Video"
+              label={video.likesLabel}
+              icon="heart"
+              active={video.liked}
+              extraClass={likeAnimate ? "animate-bounce" : ""}
+              fill={video.liked ? "currentColor" : "none"}
+              onClick={handleLikeClick}
+            />
+            <ActionButton
+              id={`comments-btn-${index}`}
+              title="Open Comments"
+              label={video.commentsLabel}
+              icon="message"
+              onClick={onOpenComments}
+            />
+            <ActionButton
+              id={`share-btn-${index}`}
+              title="Share Link"
+              label={video.sharesLabel}
+              icon="share"
+              onClick={onShare}
+            />
+
+            {/* Grid / Feed toggle (desktop only) */}
+            <div className="hidden sm:flex flex-col items-center">
+              <button
+                id="viewmode-toggle-btn"
+                onClick={onViewModeToggle}
+                title={viewMode === "feed" ? "Switch to Grid Explorer" : "Switch to Reel Feed"}
+                className="w-12 h-12 rounded-xl flex items-center justify-center bg-zinc-900/80 border border-zinc-800 hover:border-indigo-500 text-indigo-400 hover:text-indigo-300 backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95"
+              >
+                <Icon name={viewMode === "feed" ? "grid" : "scroll"} className="w-5 h-5" />
+              </button>
+              <span className="text-[9px] text-indigo-400 font-extrabold font-mono mt-1 shadow-sm tracking-widest uppercase text-center max-w-[56px] leading-3">
+                {viewMode === "feed" ? "Grid" : "Feed"}
+              </span>
+            </div>
+          </div>
+        );
+      }
+
+      // -- CommentPanel --------------------------------------------------------
       function CommentPanel({ isOpen, onClose, videoId, videoTitle, comments, onAddComment }) {
         const [inputText, setInputText] = useState("");
-        const scrollContainerRef = useRef(null);
+        const scrollRef = useRef(null);
 
         useEffect(() => {
-          if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-          }
+          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }, [comments, isOpen]);
 
-        function handleSubmit(event) {
-          event.preventDefault();
+        function handleSubmit(e) {
+          e.preventDefault();
           if (!inputText.trim()) return;
           onAddComment(videoId, inputText.trim());
           setInputText("");
@@ -563,6 +623,7 @@
 
         return (
           <>
+            {/* Backdrop */}
             <div
               id="comment-backdrop"
               onClick={onClose}
@@ -571,6 +632,7 @@
               }`}
             />
 
+            {/* Sheet */}
             <div
               id="comment-sheet"
               className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto h-[65vh] bg-neutral-900/95 backdrop-blur-2xl border-t border-white/10 rounded-t-3xl z-50 flex flex-col transition-transform duration-300 ease-out transform pointer-events-auto ${
@@ -579,6 +641,7 @@
             >
               <div className="w-12 h-1 bg-white/20 rounded-full mx-auto my-3 flex-shrink-0" />
 
+              {/* Header */}
               <div className="px-5 pb-3 border-b border-white/10 flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-white font-bold text-base flex items-center gap-2">
@@ -596,7 +659,8 @@
                 </button>
               </div>
 
-              <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scroll-smooth">
+              {/* Comment list */}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scroll-smooth">
                 {comments.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center py-10 opacity-40">
                     <Icon name="message" className="w-10 h-10 mb-2 text-indigo-400" />
@@ -621,13 +685,14 @@
                 )}
               </div>
 
+              {/* Comment input */}
               <form onSubmit={handleSubmit} className="p-4 border-t border-white/5 bg-zinc-950 flex gap-3 items-center">
                 <input
                   id="new-comment-input"
                   type="text"
                   placeholder="Add a clean comment..."
                   value={inputText}
-                  onChange={(event) => setInputText(event.target.value)}
+                  onChange={(e) => setInputText(e.target.value)}
                   className="flex-1 bg-white/5 text-white placeholder-white/30 text-sm border border-white/10 rounded-full px-5 py-2.5 outline-none focus:border-indigo-500 transition-colors"
                 />
                 <button
@@ -644,10 +709,12 @@
         );
       }
 
+      // -- GridExplorer --------------------------------------------------------
       function GridExplorer({ videos, onSelectVideo, currentQuery }) {
         return (
           <div className="w-full min-h-screen bg-black pt-28 pb-10 px-4 scroll-smooth">
             <div className="max-w-6xl mx-auto">
+              {/* Grid header */}
               <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
                 <div>
                   <h1 className="text-white font-extralight text-2xl tracking-tight italic flex items-center gap-2">
@@ -663,6 +730,7 @@
                 </div>
               </div>
 
+              {/* Empty state */}
               {videos.length === 0 ? (
                 <div className="flex flex-col items-center justify-center text-center py-24 text-neutral-500">
                   <Icon name="image" className="w-12 h-12 mb-3 text-neutral-600 animate-bounce" />
@@ -678,6 +746,7 @@
                       onClick={() => onSelectVideo(index)}
                       className="group relative aspect-[9/16] bg-zinc-900/40 rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 transform hover:-translate-y-1.5"
                     >
+                      {/* Thumbnail */}
                       <div className="absolute inset-0 z-0">
                         <img
                           src={`https://img.youtube.com/vi/${video.id}/hqdefault.jpg`}
@@ -688,6 +757,7 @@
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-black/15 group-hover:via-black/20 transition-colors" />
                       </div>
 
+                      {/* Fallback badge */}
                       <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 opacity-90">
                         {video.isFallback && (
                           <span className="bg-amber-500/95 text-black font-extrabold text-[8px] tracking-wider px-2 py-0.5 rounded-sm uppercase select-none font-mono">
@@ -696,12 +766,14 @@
                         )}
                       </div>
 
+                      {/* Hover play button */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 z-10 transition-opacity duration-300">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/40 scale-75 group-hover:scale-100 transition-transform duration-300">
                           <Icon name="play" className="w-5 h-5 fill-white pl-0.5" />
                         </div>
                       </div>
 
+                      {/* Card info */}
                       <div className="absolute bottom-0 inset-x-0 p-4 z-10 text-white flex flex-col gap-1.5">
                         <span className="text-[10px] text-indigo-400 font-extrabold font-mono tracking-widest uppercase truncate">@{video.channel}</span>
                         <h3 className="text-xs font-bold leading-relaxed line-clamp-2 text-zinc-100 group-hover:text-white transition-colors">
@@ -729,46 +801,47 @@
       }
 
       // -----------------------------------------------------------------------
-      // App
+      // 5. App (root)
       // -----------------------------------------------------------------------
 
       function App() {
-        const [apiKey, setApiKey] = useState(() => localStorage.getItem("yt_api_key") || DEFAULT_YOUTUBE_API_KEY);
-        const [videos, setVideos] = useState([]);
-        const [currentQuery, setCurrentQuery] = useState(DEFAULT_SEARCH_QUERY);
-        const [activeIndex, setActiveIndex] = useState(0);
-        const [isMuted, setIsMuted] = useState(true);
+        const [apiKey,          setApiKey]          = useState(() => localStorage.getItem("yt_api_key") || DEFAULT_YOUTUBE_API_KEY);
+        const [videos,          setVideos]          = useState([]);
+        const [currentQuery,    setCurrentQuery]    = useState(DEFAULT_SEARCH_QUERY);
+        const [activeIndex,     setActiveIndex]     = useState(0);
+        const [isMuted,         setIsMuted]         = useState(true);
         const [showSoundPrompt, setShowSoundPrompt] = useState(true);
-        const [viewMode, setViewMode] = useState("feed");
-        const [isLoading, setIsLoading] = useState(false);
+        const [viewMode,        setViewMode]        = useState("feed");
+        const [isLoading,       setIsLoading]       = useState(false);
         const [isUsingFallback, setIsUsingFallback] = useState(false);
-        const [nextPageToken, setNextPageToken] = useState("");
-        const [hasMoreVideos, setHasMoreVideos] = useState(true);
-        const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
-        const [isCommentsOpen, setIsCommentsOpen] = useState(false);
-        const [toastMessage, setToastMessage] = useState(null);
+        const [nextPageToken,   setNextPageToken]   = useState("");
+        const [hasMoreVideos,   setHasMoreVideos]   = useState(true);
+        const [allComments,     setAllComments]     = useState(() => INITIAL_COMMENTS);
+        const [isCommentsOpen,  setIsCommentsOpen]  = useState(false);
+        const [toastMessage,    setToastMessage]    = useState(null);
 
-        const feedContainerRef = useRef(null);
-        const toastTimeoutRef = useRef(null);
-        const loadedVideoIdsRef = useRef(new Set());
-        const requestGenerationRef = useRef(0);
-        const apiKeyRef = useRef(apiKey);
-        const isLoadingMoreRef = useRef(false);
+        const feedContainerRef   = useRef(null);
+        const toastTimeoutRef    = useRef(null);
+        const loadedVideoIdsRef  = useRef(new Set());
+        const requestGenRef      = useRef(0);
+        const apiKeyRef          = useRef(apiKey);
+        const isLoadingMoreRef   = useRef(false);
 
+        // Keep apiKeyRef + localStorage in sync
         useEffect(() => {
           apiKeyRef.current = apiKey;
           localStorage.setItem("yt_api_key", apiKey);
         }, [apiKey]);
 
+        // -- Toast helper --
         function showToast(message) {
           if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
           setToastMessage(message);
           toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2800);
         }
 
-        async function fetchDiscoveryBatch(baseQuery, options = {}) {
-          const { reset = false, generation = requestGenerationRef.current } = options;
-
+        // -- Core fetch (delegates to ApiService) --
+        async function fetchDiscoveryBatch(baseQuery, { reset = false, generation = requestGenRef.current } = {}) {
           const pageToken = reset ? "" : nextPageToken;
 
           if (reset) {
@@ -777,40 +850,31 @@
             setHasMoreVideos(true);
           }
 
-          const response = await fetch(buildSearchUrl(baseQuery, apiKeyRef.current, pageToken));
-          const data = await response.json();
+          const data = await ApiService.fetchBatch(baseQuery, apiKeyRef.current, pageToken);
 
-          if (generation !== requestGenerationRef.current) {
-            return [];
-          }
-
-          if (data.error) {
-            throw new Error(data.error.message);
-          }
+          if (generation !== requestGenRef.current) return [];
 
           const newToken = data.nextPageToken || "";
           setNextPageToken(newToken);
           setHasMoreVideos(Boolean(newToken));
 
-          const freshVideos = [];
-
+          const fresh = [];
           for (const item of data.items || []) {
-            const formatted = formatApiVideo(item);
-            if (!formatted) continue;
-            if (loadedVideoIdsRef.current.has(formatted.id)) continue;
+            const formatted = ApiService.formatApiVideo(item);
+            if (!formatted || loadedVideoIdsRef.current.has(formatted.id)) continue;
             loadedVideoIdsRef.current.add(formatted.id);
-            freshVideos.push(formatted);
+            fresh.push(formatted);
           }
-
-          return freshVideos;
+          return fresh;
         }
 
+        // -- Search / reset --
         async function handleSearch(query) {
-          const trimmedQuery = (query || DEFAULT_SEARCH_QUERY).trim() || DEFAULT_SEARCH_QUERY;
-          const generation = requestGenerationRef.current + 1;
-          requestGenerationRef.current = generation;
+          const q          = (query || DEFAULT_SEARCH_QUERY).trim() || DEFAULT_SEARCH_QUERY;
+          const generation = requestGenRef.current + 1;
+          requestGenRef.current = generation;
 
-          setCurrentQuery(trimmedQuery);
+          setCurrentQuery(q);
           setVideos([]);
           setActiveIndex(0);
           setIsLoading(true);
@@ -824,68 +888,62 @@
           });
 
           try {
-            const freshVideos = await fetchDiscoveryBatch(trimmedQuery, { reset: true, generation });
-            if (generation !== requestGenerationRef.current) return;
-            if (!freshVideos.length) throw new Error("No unique Shorts results yielded");
-
-            setVideos(freshVideos);
-            showToast(`Loaded ${freshVideos.length} ${trimmedQuery} shorts`);
-          } catch (error) {
-            if (generation !== requestGenerationRef.current) return;
-            console.warn("YouTube discovery failed completely; using fallback stream.", error);
-            const fallback = FALLBACK_VIDEOS.map((video) => ({ ...video, ...createEngagementMetrics() }));
-            loadedVideoIdsRef.current = new Set(fallback.map((video) => video.id));
+            const fresh = await fetchDiscoveryBatch(q, { reset: true, generation });
+            if (generation !== requestGenRef.current) return;
+            if (!fresh.length) throw new Error("No unique Shorts results yielded");
+            setVideos(fresh);
+            showToast(`Loaded ${fresh.length} ${q} shorts`);
+          } catch (err) {
+            if (generation !== requestGenRef.current) return;
+            console.warn("YouTube discovery failed; using fallback stream.", err);
+            const fallback = FALLBACK_VIDEOS.map((v) => ({ ...v, ...createEngagementMetrics() }));
+            loadedVideoIdsRef.current = new Set(fallback.map((v) => v.id));
             setIsUsingFallback(true);
             setHasMoreVideos(false);
             setVideos(shuffle(fallback));
             showToast("YouTube API failed; fallback stream loaded");
           } finally {
-            if (generation === requestGenerationRef.current) setIsLoading(false);
+            if (generation === requestGenRef.current) setIsLoading(false);
           }
         }
 
-        async function loadMoreEndlessVideos() {
+        // -- Infinite scroll load-more --
+        async function loadMoreVideos() {
           if (isLoadingMoreRef.current || isLoading || !hasMoreVideos || videos.length === 0) return;
-
           isLoadingMoreRef.current = true;
-          const generation = requestGenerationRef.current;
+          const generation = requestGenRef.current;
           setIsLoading(true);
 
           try {
-            const moreVideos = await fetchDiscoveryBatch(currentQuery, { reset: false, generation });
-            if (generation !== requestGenerationRef.current) return;
-
-            if (moreVideos.length) {
-              setVideos((previous) => [...previous, ...moreVideos]);
-              showToast(`Added ${moreVideos.length} more ${currentQuery} shorts`);
+            const more = await fetchDiscoveryBatch(currentQuery, { reset: false, generation });
+            if (generation !== requestGenRef.current) return;
+            if (more.length) {
+              setVideos((prev) => [...prev, ...more]);
+              showToast(`Added ${more.length} more ${currentQuery} shorts`);
             } else {
               setHasMoreVideos(false);
               showToast("All shorts loaded");
             }
-          } catch (error) {
-            if (generation !== requestGenerationRef.current) return;
-            console.warn("Endless recommendation loading paused after API failure.", error);
+          } catch (err) {
+            if (generation !== requestGenRef.current) return;
+            console.warn("Endless loading paused after API failure.", err);
             showToast("API limit reached; recommendations paused");
           } finally {
-            if (generation === requestGenerationRef.current) setIsLoading(false);
+            if (generation === requestGenRef.current) setIsLoading(false);
             isLoadingMoreRef.current = false;
           }
         }
 
         // Initial load
-        useEffect(() => {
-          handleSearch(DEFAULT_SEARCH_QUERY);
-        }, []);
+        useEffect(() => { handleSearch(DEFAULT_SEARCH_QUERY); }, []);
 
-        // Auto-load more when approaching the end of the feed
+        // Trigger load-more when nearing end
         useEffect(() => {
           if (viewMode !== "feed" || videos.length === 0) return;
-          if (activeIndex >= videos.length - 3) {
-            loadMoreEndlessVideos();
-          }
+          if (activeIndex >= videos.length - 3) loadMoreVideos();
         }, [activeIndex, videos.length, viewMode]);
 
-        // IntersectionObserver to detect active video and near-end loading
+        // IntersectionObserver — track active video
         useEffect(() => {
           if (viewMode !== "feed" || videos.length === 0) return;
 
@@ -893,71 +951,52 @@
             (entries) => {
               entries.forEach((entry) => {
                 if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-                  const index = Number(entry.target.id.replace("video-section-", ""));
-                  if (!Number.isNaN(index) && index !== activeIndex) {
-                    setActiveIndex(index);
-                  }
+                  const idx = Number(entry.target.id.replace("video-section-", ""));
+                  if (!Number.isNaN(idx) && idx !== activeIndex) setActiveIndex(idx);
                 }
               });
             },
             { threshold: [0.6] }
           );
 
-          const timer = setTimeout(() => {
-            videos.forEach((_, index) => {
-              const element = document.getElementById(`video-section-${index}`);
-              if (element) observer.observe(element);
+          const t = setTimeout(() => {
+            videos.forEach((_, i) => {
+              const el = document.getElementById(`video-section-${i}`);
+              if (el) observer.observe(el);
             });
           }, 350);
 
-          return () => {
-            observer.disconnect();
-            clearTimeout(timer);
-          };
+          return () => { observer.disconnect(); clearTimeout(t); };
         }, [videos, viewMode]);
 
-        // IntersectionObserver for the last video sentinel to trigger pagination
+        // IntersectionObserver — pagination sentinel (last video)
         useEffect(() => {
           if (viewMode !== "feed" || videos.length === 0 || !hasMoreVideos) return;
-
-          const lastVideoElement = document.getElementById(`video-section-${videos.length - 1}`);
-          if (!lastVideoElement) return;
+          const last = document.getElementById(`video-section-${videos.length - 1}`);
+          if (!last) return;
 
           const sentinel = new IntersectionObserver(
-            (entries) => {
-              entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                  loadMoreEndlessVideos();
-                }
-              });
-            },
+            (entries) => { entries.forEach((e) => { if (e.isIntersecting) loadMoreVideos(); }); },
             { threshold: 0.1 }
           );
-
-          sentinel.observe(lastVideoElement);
-
-          return () => {
-            sentinel.disconnect();
-          };
+          sentinel.observe(last);
+          return () => sentinel.disconnect();
         }, [videos.length, viewMode, hasMoreVideos]);
 
+        // -- Interaction handlers --
         function handleLikeToggle(index) {
-          setVideos((previous) => {
-            const clone = [...previous];
-            const item = clone[index];
+          setVideos((prev) => {
+            const clone = [...prev];
+            const item  = clone[index];
             if (!item) return clone;
-            clone[index] = {
-              ...item,
-              liked: !item.liked,
-              likes: item.liked ? Math.max(0, item.likes - 1) : item.likes + 1,
-              likesLabel: formatMetric(item.liked ? Math.max(0, item.likes - 1) : item.likes + 1),
-            };
+            const newLikes = item.liked ? Math.max(0, item.likes - 1) : item.likes + 1;
+            clone[index] = { ...item, liked: !item.liked, likes: newLikes, likesLabel: formatMetric(newLikes) };
             return clone;
           });
         }
 
         function handleMuteToggle() {
-          setIsMuted((value) => !value);
+          setIsMuted((v) => !v);
           setShowSoundPrompt(false);
         }
 
@@ -970,49 +1009,33 @@
         function handleShareClick(index) {
           const video = videos[index];
           if (!video) return;
-
-          const shareUrl = `https://www.youtube.com/watch?v=${video.id}`;
-          if (navigator.share) {
-            navigator.share({ title: video.title, url: shareUrl }).catch(() => {});
-            return;
-          }
-
-          navigator.clipboard.writeText(shareUrl).then(() => {
-            showToast("Reel link copied to clipboard");
-          });
+          const url = `https://www.youtube.com/watch?v=${video.id}`;
+          if (navigator.share) { navigator.share({ title: video.title, url }).catch(() => {}); return; }
+          navigator.clipboard.writeText(url).then(() => showToast("Reel link copied to clipboard"));
         }
 
         function scrollIndexTo(direction) {
-          const nextIndex = direction === "up" ? activeIndex - 1 : activeIndex + 1;
-          if (nextIndex < 0 || nextIndex >= videos.length) return;
-
-          const targetElement = document.getElementById(`video-section-${nextIndex}`);
-          if (targetElement) {
-            targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
-            setActiveIndex(nextIndex);
-          }
+          const next = direction === "up" ? activeIndex - 1 : activeIndex + 1;
+          if (next < 0 || next >= videos.length) return;
+          const el = document.getElementById(`video-section-${next}`);
+          if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); setActiveIndex(next); }
         }
 
         function handleAddComment(videoId, text) {
           const newComment = {
-            id: `comment-${Date.now()}`,
+            id:          `comment-${Date.now()}`,
             videoId,
-            username: "You",
+            username:    "You",
             text,
-            timestamp: "Just now",
+            timestamp:   "Just now",
             avatarColor: "bg-rose-500",
           };
-
-          setAllComments((previous) => ({
-            ...previous,
-            [videoId]: [...(previous[videoId] || []), newComment],
-          }));
-
-          setVideos((previous) =>
-            previous.map((video) =>
-              video.id === videoId
-                ? { ...video, commentsCount: video.commentsCount + 1, commentsLabel: formatMetric(video.commentsCount + 1) }
-                : video
+          setAllComments((prev) => ({ ...prev, [videoId]: [...(prev[videoId] || []), newComment] }));
+          setVideos((prev) =>
+            prev.map((v) =>
+              v.id === videoId
+                ? { ...v, commentsCount: v.commentsCount + 1, commentsLabel: formatMetric(v.commentsCount + 1) }
+                : v
             )
           );
         }
@@ -1021,37 +1044,53 @@
           setViewMode("feed");
           setActiveIndex(index);
           setTimeout(() => {
-            const element = document.getElementById(`video-section-${index}`);
-            if (element) element.scrollIntoView({ behavior: "auto", block: "start" });
+            const el = document.getElementById(`video-section-${index}`);
+            if (el) el.scrollIntoView({ behavior: "auto", block: "start" });
           }, 150);
         }
 
-        const activeVideo = videos[activeIndex];
+        const activeVideo       = videos[activeIndex];
         const activeCommentList = activeVideo ? allComments[activeVideo.id] || [] : [];
 
         return (
-          <div onClick={handleGlobalInteraction} className="relative w-full h-screen bg-[#050505] text-zinc-100 overflow-hidden font-sans select-none">
-            <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-10" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+          <div
+            onClick={handleGlobalInteraction}
+            className="relative w-full h-screen bg-[#050505] text-zinc-100 overflow-hidden font-sans select-none"
+          >
+            {/* Dot-grid texture */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.03] z-10"
+              style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "24px 24px" }}
+            />
 
+            {/* Persistent top search header */}
             <SearchHeader
               currentQuery={currentQuery}
               onSearch={handleSearch}
               apiKey={apiKey}
-              onChangeApiKey={(value) => {
-                apiKeyRef.current = value;
-                setApiKey(value);
+              onChangeApiKey={(val) => {
+                apiKeyRef.current = val;
+                setApiKey(val);
                 setTimeout(() => handleSearch(currentQuery), 200);
               }}
               isLoading={isLoading}
               isUsingFallback={isUsingFallback}
             />
 
+            {/* viewMode: feed vs grid */}
             {viewMode === "feed" ? (
               <div className="relative w-full h-screen pb-6">
-                <div ref={feedContainerRef} className="w-full h-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
+                {/* Scrollable reel feed */}
+                <div
+                  ref={feedContainerRef}
+                  className="w-full h-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar"
+                  style={{ WebkitOverflowScrolling: "touch" }}
+                >
                   {videos.map((video, index) => {
-                    const distanceFromActive = Math.abs(index - activeIndex);
-                    const shouldLoadEmbed = index === activeIndex || (index > activeIndex && index <= activeIndex + NEARBY_RENDER_DISTANCE) || distanceFromActive <= 1;
+                    const dist            = Math.abs(index - activeIndex);
+                    const shouldLoadEmbed = index === activeIndex ||
+                      (index > activeIndex && index <= activeIndex + NEARBY_RENDER_DISTANCE) ||
+                      dist <= 1;
 
                     return (
                       <VideoSection
@@ -1065,6 +1104,8 @@
                       />
                     );
                   })}
+
+                  {/* Loading spinner at feed bottom */}
                   {isLoading && videos.length > 0 && (
                     <div className="w-full h-24 flex items-center justify-center bg-black snap-start">
                       <Icon name="refresh" className="w-6 h-6 text-indigo-400 animate-spin" />
@@ -1072,6 +1113,7 @@
                   )}
                 </div>
 
+                {/* Desktop prev/next navigation */}
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 z-30 hidden md:flex flex-col gap-4">
                   <button
                     onClick={() => scrollIndexTo("up")}
@@ -1094,6 +1136,7 @@
                   </button>
                 </div>
 
+                {/* Sidebar action buttons */}
                 {activeVideo && (
                   <Sidebar
                     video={activeVideo}
@@ -1109,9 +1152,14 @@
                 )}
               </div>
             ) : (
-              <GridExplorer videos={videos} onSelectVideo={handleSelectFromGrid} currentQuery={currentQuery} />
+              <GridExplorer
+                videos={videos}
+                onSelectVideo={handleSelectFromGrid}
+                currentQuery={currentQuery}
+              />
             )}
 
+            {/* Comment panel (slide-up sheet) */}
             {activeVideo && (
               <CommentPanel
                 isOpen={isCommentsOpen}
@@ -1123,6 +1171,7 @@
               />
             )}
 
+            {/* Sound prompt CTA */}
             {showSoundPrompt && (
               <div
                 onClick={handleMuteToggle}
@@ -1133,6 +1182,7 @@
               </div>
             )}
 
+            {/* Ticker footer */}
             <footer className="fixed bottom-0 left-0 right-0 h-6 bg-indigo-600 text-white flex items-center overflow-hidden z-40 select-none pointer-events-none">
               <div className="flex gap-16 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.25em] animate-marquee">
                 <span>Critical Update: Neural Core v2.4 initialized...</span>
@@ -1146,6 +1196,7 @@
               </div>
             </footer>
 
+            {/* Toast notification */}
             {toastMessage && (
               <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl bg-zinc-900/95 text-zinc-100 border border-white/10 shadow-2xl flex items-center gap-2 font-semibold text-xs tracking-wider">
                 <Icon name="sparkles" className="w-3.5 h-3.5 text-indigo-400" />
@@ -1156,6 +1207,7 @@
         );
       }
 
+      // Mount
       ReactDOM.createRoot(document.getElementById("root")).render(
         <React.StrictMode>
           <App />
