@@ -7,14 +7,24 @@
       name="description"
       content="An ultra-modern, cinematic vertical scrolling shorts feed inspired by TikTok and YouTube Shorts, featuring full-screen HD playback, interactive sidebars, comments panels, and dynamic animations."
     />
-    <title>Premium Shorts Feed</title>
+    <title>AETHER - Cyber Stream Explorer</title>
+    <!-- Premium Google Fonts Configuration -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              display: ["Space Grotesk", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
             animation: {
-              marquee: "marquee 30s linear infinite",
+              marquee: "marquee 35s linear infinite",
+              pulseSlow: "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
             },
             keyframes: {
               marquee: {
@@ -27,38 +37,136 @@
       };
     </script>
     <style>
-      html, body {
-        background: #050505;
-        color: #f4f4f5;
+      html,
+      body {
+        background: #060608;
+        color: #F4F4F6;
         overscroll-behavior-y: none;
+        font-family: 'Inter', sans-serif;
       }
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      .pt-safe { padding-top: env(safe-area-inset-top, 16px); }
-      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 16px);
+      }
+
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 16px);
+      }
+
+      .shimmer-bg {
+        background: linear-gradient(90deg, #121214 25%, #1d1d22 50%, #121214 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+      }
+
+      @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+
+      .masonry-col {
+        break-inside: avoid;
+      }
     </style>
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- CDNs and Babel Engine -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <script type="text/babel">
-      const { useEffect, useRef, useState, useCallback } = React;
+      const { useEffect, useRef, useState, useMemo, useCallback } = React;
 
       // -----------------------------------------------------------------------
-      // 1. Constants & Config
+      // Constants & Config
       // -----------------------------------------------------------------------
 
       const DEFAULT_SEARCH_QUERY = "anime edits";
       const SEARCH_BATCH_SIZE = 5;
-      const NEARBY_RENDER_DISTANCE = 3;
+      const MAX_PRELOAD_ITEMS = 3;
+      const MAX_HISTORY_LEN = 5;
+
+      const CATEGORY_CHIPS = [
+        { id: "anime", label: "Anime", query: "anime edits" },
+        { id: "gaming", label: "Gaming", query: "gaming montage" },
+        { id: "phonk", label: "Phonk", query: "phonk beats car" },
+        { id: "cars", label: "Cars", query: "jdm stance cars" },
+        { id: "sports", label: "Sports", query: "extreme sports skills" },
+        { id: "memes", label: "Memes", query: "surreal shitposting" },
+        { id: "edits", label: "Edits", query: "cinematic vibe transitions" }
+      ];
+
+      const RELATED_SEARCHES = {
+        "anime edits": ["anime fight shorts", "neon anime edits", "anime transitions amv", "retro anime loops"],
+        "gaming montage": ["valorant clips speedrun", "retro cyber gaming", "cyberpunk gaming loops", "pc aesthetic builds"],
+        "phonk beats car": ["drift phonk edits", "bass boosted phonk", "synthwave music loops", "jdm phonk visualizer"],
+        "jdm stance cars": ["porsche night run", "supercar rev shorts", "drift street compilations", "tokyo highway drift"],
+        "extreme sports skills": ["snowboard park flight", "skate street session", "nba court breaks", "bmx park compilation"],
+        "surreal shitposting": ["brainrot edit loops", "discord memes 4k", "surreal kitty loops", "epic meme compilation"],
+        "cinematic vibe transitions": ["vhs lo-fi aesthetic", "cozy rain walking stroll", "neon night light edits", "glowing cyberpunk city"]
+      };
 
       const FALLBACK_VIDEOS = [
-        { id: "gS-K01j1N6o", title: "Vibe check under Tokyo neon rain lights", channel: "TokyoVibeZ", liked: false, isFallback: true },
-        { id: "7zAtL-59vQ4", title: "Exploring deep valleys POV - Swiss glider drone", channel: "SkyDrones", liked: false, isFallback: true },
-        { id: "C3-6D-Qy7k8", title: "Cozy Kyoto golden walk in sunset alleys", channel: "Wanderer", liked: false, isFallback: true },
-        { id: "M3_o4N-SveY", title: "Quiet rustic library window rain storm sounds", channel: "ChillWaves", liked: false, isFallback: true },
+        {
+          id: "gS-K01j1N6o",
+          title: "Vibe check under Tokyo neon rain lights",
+          channel: "TokyoVibeZ",
+          likes: 542010,
+          commentsCount: 1422,
+          liked: false,
+          shares: 28904,
+          views: 1240321,
+          publishedAt: "2026-05-12T08:00:00Z",
+          isFallback: true,
+        },
+        {
+          id: "7zAtL-59vQ4",
+          title: "Exploring deep valleys POV - Swiss glider drone",
+          channel: "SkyDrones",
+          likes: 832044,
+          commentsCount: 6520,
+          liked: false,
+          shares: 124021,
+          views: 2908234,
+          publishedAt: "2026-05-18T12:00:00Z",
+          isFallback: true,
+        },
+        {
+          id: "C3-6D-Qy7k8",
+          title: "Cozy Kyoto golden walk in sunset alleys",
+          channel: "Wanderer",
+          likes: 638902,
+          commentsCount: 3919,
+          liked: false,
+          shares: 34123,
+          views: 1890321,
+          publishedAt: "2026-05-24T18:00:00Z",
+          isFallback: true,
+        },
+        {
+          id: "M3_o4N-SveY",
+          title: "Quiet rustic library window rain storm sounds",
+          channel: "ChillWaves",
+          likes: 215011,
+          commentsCount: 1402,
+          liked: false,
+          shares: 9819,
+          views: 940215,
+          publishedAt: "2026-05-29T10:00:00Z",
+          isFallback: true,
+        },
       ];
 
       const INITIAL_COMMENTS = {
@@ -83,42 +191,46 @@
       };
 
       // -----------------------------------------------------------------------
-      // 2. Icons
+      // Vector Icons with Support for New Action Triggers
       // -----------------------------------------------------------------------
-
       const ICONS = {
-        alert:       ["M10.29 3.86 1.82 14a2 2 0 0 0 1.93 2.5h15.92a2 2 0 0 0 1.93-2.5l-1.82-14a2 2 0 0 0-3.86 0Z", "M12 9v4", "M12 17h.01"],
-        check:       ["M20 6 9 17l-5-5"],
+        alert: ["M12 9v4", "M12 17h.01", "M10.29 3.86 1.82 14a2 2 0 0 0 1.93 2.5h15.92a2 2 0 0 0 1.93-2.5l-1.82-14a2 2 0 0 0-3.86 0Z"],
+        check: ["M20 6 9 17l-5-5"],
         chevronDown: ["m6 9 6 6 6-6"],
-        chevronUp:   ["m18 15-6-6-6 6"],
-        grid:        ["M3 3h7v7H3z", "M14 3h7v7h-7z", "M14 14h7v7h-7z", "M3 14h7v7H3z"],
-        heart:       ["M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"],
-        image:       ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M3 11V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6", "m21 15-5-5L5 21", "m14 14-3-3-8 8"],
-        key:         ["m15.5 7.5 2 2", "m11 11 4.5-4.5a5 5 0 1 1 2 2L13 13l-3 3H7v3H4v-3.5z"],
-        message:     ["M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"],
-        pause:       ["M6 4h4v16H6z", "M14 4h4v16h-4z"],
-        play:        ["M5 5a2 2 0 0 1 3-1.73l11 7a2 2 0 0 1 0 3.46l-11 7A2 2 0 0 1 5 19z"],
-        refresh:     ["M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", "M16 16h5v5"],
-        scroll:      ["M8 21h8", "M12 17v4", "M7 4h10a2 2 0 0 1 2 2v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V6a2 2 0 0 1 2-2z"],
-        search:      ["m21 21-4.34-4.34", "M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"],
-        send:        ["m22 2-7 20-4-9-9-4Z", "M22 2 11 13"],
-        share:       ["M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7", "M16 6l-4-4-4 4", "M12 2v13"],
-        sparkles:    ["M9.94 15.5 8.5 21l-1.44-5.5L1.5 14l5.56-1.5L8.5 7l1.44 5.5L15.5 14z", "M19 8l-.8 3-3.2.8 3.2.8.8 3 .8-3 3.2-.8-3.2-.8z", "M19 2l-.5 2-2 .5 2 .5.5 2 .5-2 2-.5-2-.5z"],
-        volume:      ["M11 5 6 9H2v6h4l5 4z", "M15.54 8.46a5 5 0 0 1 0 7.07", "M19.07 4.93a10 10 0 0 1 0 14.14"],
-        volumeX:     ["M11 5 6 9H2v6h4l5 4z", "m23 9-6 6", "m17 9 6 6"],
-        x:           ["M18 6 6 18", "M6 6l12 12"],
+        chevronUp: ["m18 15-6-6-6 6"],
+        grid: ["M3 3h7v7H3z", "M14 3h7v7h-7z", "M14 14h7v7h-7z", "M3 14h7v7H3z"],
+        heart: ["M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"],
+        image: ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M3 11V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6", "m21 15-5-5L5 21", "m14 14-3-3-8 8"],
+        key: ["m15.5 7.5 2 2", "m11 11 4.5-4.5a5 5 0 1 1 2 2L13 13l-3 3H7v3H4v-3.5z"],
+        message: ["M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"],
+        pause: ["M6 4h4v16H6z", "M14 4h4v16h-4z"],
+        play: ["M5 5a2 2 0 0 1 3-1.73l11 7a2 2 0 0 1 0 3.46l-11 7A2 2 0 0 1 5 19z"],
+        refresh: ["M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", "M16 16h5v5"],
+        scroll: ["M8 21h8", "M12 17v4", "M7 4h10a2 2 0 0 1 2 2v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V6a2 2 0 0 1 2-2z"],
+        search: ["m21 21-4.34-4.34", "M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"],
+        send: ["m22 2-7 20-4-9-9-4Z", "M22 2 11 13"],
+        share: ["M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7", "M16 6l-4-4-4 4", "M12 2v13"],
+        sparkles: ["M9.94 15.5 8.5 21l-1.44-5.5L1.5 14l5.56-1.5L8.5 7l1.44 5.5L15.5 14z", "M19 8l-.8 3-3.2.8 3.2.8.8 3 .8-3 3.2-.8-3.2-.8z", "M19 2l-.5 2-2 .5 2 .5.5 2 .5-2 2-.5-2-.5z"],
+        volume: ["M11 5 6 9H2v6h4l5 4z", "M15.54 8.46a5 5 0 0 1 0 7.07", "M19.07 4.93a10 10 0 0 1 0 14.14"],
+        volumeX: ["M11 5 6 9H2v6h4l5 4z", "m23 9-6 6", "m17 9 6 6"],
+        x: ["M18 6 6 18", "M6 6l12 12"],
+        clock: ["M12 8v4l3 3", "M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z"],
+        fire: ["M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"],
+        help: ["M12 17h.01", "M12 13.5a2.5 2.5 0 1 0-2.5-2.5", "M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20z"],
+        sort: ["M4 6h16M4 12h10M4 18h6"],
+        analytics: ["M18 20V10", "M12 20V4", "M6 20v-6"]
       };
 
       function Icon({ name, className = "w-5 h-5", fill = "none" }) {
         return (
           <svg className={className} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            {(ICONS[name] || []).map((d) => <path key={d} d={d} />)}
+            {(ICONS[name] || []).map((d, i) => <path key={i} d={d} />)}
           </svg>
         );
       }
 
       // -----------------------------------------------------------------------
-      // 3. Helpers / ApiService
+      // Helper Utilities & Formatting
       // -----------------------------------------------------------------------
 
       function shuffle(items) {
@@ -135,270 +247,597 @@
       }
 
       function formatMetric(value) {
+        if (!value) return "0";
         if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1).replace(".0", "")}M`;
-        if (value >= 1_000)     return `${(value / 1_000).toFixed(value >= 100_000 ? 0 : 1).replace(".0", "")}K`;
+        if (value >= 1_000) return `${(value / 1_000).toFixed(value >= 100_000 ? 0 : 1).replace(".0", "")}K`;
         return String(value);
       }
 
       function createEngagementMetrics() {
-        const likes         = randomBetween(50_000, 3_000_000);
-        const commentsCount = randomBetween(500, 100_000);
-        const shares        = randomBetween(100, 50_000);
-        const views         = randomBetween(100_000, 20_000_000);
+        const likes = randomBetween(5000, 450000);
+        const commentsCount = randomBetween(200, 42000);
+        const shares = randomBetween(50, 15000);
+        const views = randomBetween(50000, 8000000);
         return {
-          likes, likesLabel: formatMetric(likes),
-          commentsCount, commentsLabel: formatMetric(commentsCount),
-          shares, sharesLabel: formatMetric(shares),
-          views, viewsLabel: formatMetric(views),
+          likes,
+          likesLabel: formatMetric(likes),
+          commentsCount,
+          commentsLabel: formatMetric(commentsCount),
+          shares,
+          sharesLabel: formatMetric(shares),
+          views,
+          viewsLabel: formatMetric(views),
+          publishedAt: new Date(Date.now() - randomBetween(1, 120) * 3600000).toISOString()
         };
       }
 
+      // Parse ISO 8601 duration string into seconds (e.g. PT45S, PT1M5S)
+      function parseISO8601Duration(duration) {
+        if (!duration) return 0;
+        const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (!match) return 0;
+        const hours = parseInt(match[1]) || 0;
+        const minutes = parseInt(match[2]) || 0;
+        const seconds = parseInt(match[3]) || 0;
+        return hours * 3600 + minutes * 60 + seconds;
+      }
+
+      // Smart safe character stripping (XSS prevention & inputs sanitization)
+      function sanitizeString(str) {
+        if (!str) return "";
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#x27;")
+          .replace(/\//g, "&#x2F;");
+      }
+
+      // Calculate approximate memory footprint estimation
+      function estimateMemoryFootprint(videoCount, customCommentsCount) {
+        const baseEstimate = 120; // KB baseline
+        const perVideoKB = 3.5;
+        const perCommentKB = 0.8;
+        return ((baseEstimate + (videoCount * perVideoKB) + (customCommentsCount * perCommentKB))).toFixed(1);
+      }
+
+      // -----------------------------------------------------------------------
+      // Enhanced API Service Layer
+      // -----------------------------------------------------------------------
       const ApiService = {
-        buildSearchUrl(query, apiKey, pageToken = "") {
-          const params = new URLSearchParams({
-            part: "snippet", type: "video", videoDuration: "short",
-            videoEmbeddable: "true", maxResults: String(SEARCH_BATCH_SIZE),
-            q: `${query} shorts`, key: apiKey,
-          });
-          if (pageToken) params.set("pageToken", pageToken);
-          return `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
+        getApiKey() {
+          try {
+            return localStorage.getItem("yt_api_key") || "";
+          } catch (e) {
+            return "";
+          }
         },
 
-        formatApiVideo(item) {
-          const videoId = item?.id?.videoId;
-          if (!videoId || item?.id?.kind !== "youtube#video") return null;
-          if (["live", "upcoming"].includes(item?.snippet?.liveBroadcastContent)) return null;
-          return {
-            id: videoId,
-            title: item.snippet.title,
-            channel: item.snippet.channelTitle || "CreativeCreator",
-            liked: false,
-            ...createEngagementMetrics(),
-          };
+        saveApiKey(key) {
+          try {
+            if (key) {
+              localStorage.setItem("yt_api_key", key.trim());
+            } else {
+              localStorage.removeItem("yt_api_key");
+            }
+          } catch (e) {
+            console.error(e);
+          }
         },
 
-        async fetchBatch(query, apiKey, pageToken = "") {
-          const response = await fetch(ApiService.buildSearchUrl(query, apiKey, pageToken));
+        async fetchBatch(query, apiKey, pageToken = "", isTrending = false) {
+          if (!apiKey.trim()) {
+            throw new Error("API_KEY_UNAVAILABLE");
+          }
+
+          let url = "";
+          if (isTrending) {
+            const params = new URLSearchParams({
+              part: "snippet,contentDetails,statistics",
+              chart: "mostPopular",
+              maxResults: "25",
+              key: apiKey,
+            });
+            if (pageToken) params.set("pageToken", pageToken);
+            url = `https://www.googleapis.com/youtube/v3/videos?${params.toString()}`;
+          } else {
+            const params = new URLSearchParams({
+              part: "snippet",
+              type: "video",
+              videoDuration: "short",
+              videoEmbeddable: "true",
+              maxResults: "20",
+              q: `${query} shorts`,
+              key: apiKey,
+            });
+            if (pageToken) params.set("pageToken", pageToken);
+            url = `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
+          }
+
+          const response = await fetch(url);
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            const errCode = errData?.error?.errors?.[0]?.reason || "UNKNOWN";
+            const errMsg = errData?.error?.message || `HTTP Server Status: ${response.status}`;
+            throw new Error(`${errCode}: ${errMsg}`);
+          }
+
           const data = await response.json();
-          if (data.error) throw new Error(data.error.message);
-          return data;
-        },
+          let rawVideos = [];
+
+          if (isTrending) {
+            rawVideos = data.items || [];
+          } else {
+            const searchItems = data.items || [];
+            const ids = searchItems.map(item => item?.id?.videoId).filter(Boolean);
+            
+            if (ids.length > 0) {
+              const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${ids.join(",")}&key=${apiKey}`;
+              const detailsResp = await fetch(detailsUrl);
+              if (detailsResp.ok) {
+                const detailsData = await detailsResp.json();
+                rawVideos = detailsData.items || [];
+              }
+            }
+          }
+
+          const filteredList = [];
+          for (const item of rawVideos) {
+            const duration = item?.contentDetails?.duration;
+            const durationSec = parseISO8601Duration(duration);
+
+            // True Shorts filtering: under 60 seconds duration, and hide upcoming/live streams
+            if (durationSec > 60 || durationSec === 0) continue;
+            if (["live", "upcoming"].includes(item?.snippet?.liveBroadcastContent)) continue;
+
+            const views = parseInt(item?.statistics?.viewCount) || randomBetween(15000, 2000000);
+            const likes = parseInt(item?.statistics?.likeCount) || randomBetween(2000, 150000);
+            const commentsCount = parseInt(item?.statistics?.commentCount) || randomBetween(50, 4000);
+
+            filteredList.push({
+              id: item.id,
+              title: item?.snippet?.title || "Short Stream Video",
+              channel: item?.snippet?.channelTitle || "AetherExplorer",
+              likes,
+              likesLabel: formatMetric(likes),
+              commentsCount,
+              commentsLabel: formatMetric(commentsCount),
+              shares: Math.floor(likes * 0.15),
+              sharesLabel: formatMetric(Math.floor(likes * 0.15)),
+              views,
+              viewsLabel: formatMetric(views),
+              publishedAt: item?.snippet?.publishedAt || new Date().toISOString(),
+              liked: false
+            });
+          }
+
+          return {
+            videos: filteredList,
+            nextPageToken: data.nextPageToken || ""
+          };
+        }
       };
 
       // -----------------------------------------------------------------------
-      // 4. Components
+      // Glassmorphic Search Header Component with Categories & Auto suggestions
       // -----------------------------------------------------------------------
+      function SearchHeader({
+        currentQuery,
+        onSearch,
+        apiKey,
+        onChangeApiKey,
+        isLoading,
+        isUsingFallback,
+        viewMode,
+        onViewModeChange,
+        recentSearches,
+        onClearRecent,
+        isTrendingMode,
+        onToggleTrending,
+        apiStats
+      }) {
+        const [inputValue, setInputValue] = useState(currentQuery);
+        const [showKeyPanel, setShowKeyPanel] = useState(false);
+        const [showRecentDropdown, setShowRecentDropdown] = useState(false);
+        const [tempKey, setTempKey] = useState(apiKey);
+        const recentRef = useRef(null);
 
-      function SearchHeader({ currentQuery, onSearch, apiKey, onChangeApiKey, isLoading, isUsingFallback, noKeyConfigured }) {
-        const [inputValue,   setInputValue]   = useState(currentQuery);
-        const [showKeyPanel, setShowKeyPanel] = useState(noKeyConfigured);
-        const [tempKey,      setTempKey]      = useState(apiKey);
+        useEffect(() => {
+          setInputValue(currentQuery);
+        }, [currentQuery]);
 
-        useEffect(() => { setInputValue(currentQuery); }, [currentQuery]);
-        useEffect(() => { if (noKeyConfigured) setShowKeyPanel(true); }, [noKeyConfigured]);
+        useEffect(() => {
+          function clickOutside(e) {
+            if (recentRef.current && !recentRef.current.contains(e.target)) {
+              setShowRecentDropdown(false);
+            }
+          }
+          document.addEventListener("mousedown", clickOutside);
+          return () => document.removeEventListener("mousedown", clickOutside);
+        }, []);
 
         function handleSubmit(e) {
           e.preventDefault();
-          const val = inputValue.trim();
-          if (val) onSearch(val);
+          const query = inputValue.trim();
+          if (query) {
+            onSearch(query);
+            setShowRecentDropdown(false);
+          }
         }
 
-        function saveApiKey() {
-          onChangeApiKey(tempKey.trim());
-          setShowKeyPanel(false);
+        function handleSuggestionClick(q) {
+          setInputValue(q);
+          onSearch(q);
+          setShowRecentDropdown(false);
         }
 
         return (
-          <div className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/50 to-transparent pt-safe pb-4 px-4 pointer-events-none">
-            <div className="max-w-md mx-auto pointer-events-auto">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white font-bold text-xs tracking-wider uppercase select-none">
-                  <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center shadow-[0_0_10px_rgba(99,102,241,0.6)]">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
+          <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 pointer-events-auto ${
+            viewMode === "grid"
+              ? "bg-[#0A0A0E]/95 border-b border-white/5 h-20 flex flex-col justify-center px-4 sm:px-8 shadow-md"
+              : "bg-gradient-to-b from-black/95 via-black/40 to-transparent pt-safe pb-4 px-4 sm:px-8 h-28 flex flex-col justify-center"
+          }`}>
+            <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-4">
+              {/* Brand logo & views switchers */}
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div onClick={() => onSearch(DEFAULT_SEARCH_QUERY)} className="flex items-center gap-2 select-none cursor-pointer group">
+                  <div className="w-9 h-9 bg-gradient-to-tr from-indigo-500 via-purple-600 to-pink-500 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.55)] group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
                   </div>
-                  <span className="tracking-widest">AETHER.REELS</span>
+                  <span className="text-lg font-bold tracking-widest text-white font-display hidden sm:inline-block bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">AETHER</span>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 relative flex items-center">
-                  <div className="w-full relative">
+                <nav className="flex items-center gap-1 bg-black/45 p-1 rounded-full border border-white/5 backdrop-blur-md">
+                  <button
+                    id="pill-feed-selector"
+                    onClick={() => onViewModeChange("feed")}
+                    className={`px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-semibold font-display tracking-widest uppercase transition-all duration-300 ${
+                      viewMode === "feed"
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-sm"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    Feed
+                  </button>
+                  <button
+                    id="pill-grid-selector"
+                    onClick={() => onViewModeChange("grid")}
+                    className={`px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-semibold font-display tracking-widest uppercase transition-all duration-300 ${
+                      viewMode === "grid"
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-sm"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    Matrix Grid
+                  </button>
+                </nav>
+              </div>
+
+              {/* Dynamic search and API operations */}
+              <div className="flex items-center gap-2 sm:gap-3" ref={recentRef}>
+                <div className="relative">
+                  <form onSubmit={handleSubmit} className="flex items-center">
+                    <div className="absolute left-3.5 text-zinc-400 pointer-events-none">
+                      <Icon name="search" className="w-3.5 h-3.5" />
+                    </div>
                     <input
                       id="search-input-field"
                       type="text"
-                      placeholder="Query system files..."
+                      placeholder={isTrendingMode ? "Trending Mode Active..." : "Explore Shorts..."}
+                      disabled={isTrendingMode}
                       value={inputValue}
+                      onFocus={() => { if (!isTrendingMode) setShowRecentDropdown(recentSearches.length > 0); }}
                       onChange={(e) => setInputValue(e.target.value)}
-                      className="w-full bg-zinc-900/40 backdrop-blur-xl border border-white/10 focus:border-indigo-500 text-white text-xs font-semibold rounded-full py-2 pl-9 pr-9 outline-none transition-all focus:ring-1 focus:ring-indigo-500/30"
+                      className="bg-black/35 border border-white/10 hover:border-white/20 focus:border-indigo-500/80 rounded-full py-1.5 sm:py-2 pl-9 pr-8 text-[11px] sm:text-xs w-28 xs:w-36 sm:w-56 outline-none transition-all text-white font-semibold focus:ring-1 focus:ring-indigo-500/30"
                     />
-                    <Icon name="search" className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    {isLoading && <Icon name="refresh" className="w-3.5 h-3.5 text-indigo-400 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />}
-                  </div>
-                </form>
+                    {isLoading && (
+                      <Icon name="refresh" className="w-3 h-3 text-indigo-400 absolute right-3 animate-spin" />
+                    )}
+                  </form>
 
-                <button
-                  id="api-key-toggle-btn"
-                  onClick={() => { setTempKey(apiKey); setShowKeyPanel((v) => !v); }}
-                  title="Configure API Credentials"
-                  className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all ${
-                    noKeyConfigured
-                      ? "bg-red-500/10 border-red-500/40 text-red-400 hover:bg-red-500/20 animate-pulse"
-                      : isUsingFallback
-                        ? "bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20"
-                        : "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20"
-                  }`}
-                >
-                  <Icon name="key" className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="mt-2 flex items-center justify-center gap-2 text-[10px] text-zinc-400 font-mono uppercase tracking-[0.2em]">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                <span>Watching: {currentQuery}</span>
-              </div>
-
-              {showKeyPanel && (
-                <div className="mt-3 p-4 rounded-2xl bg-neutral-900/95 backdrop-blur-2xl border border-white/15 shadow-2xl">
-                  <h4 className="text-white text-xs font-bold tracking-wider uppercase mb-1 flex items-center gap-2">
-                    <Icon name="key" className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>YouTube API Settings</span>
-                  </h4>
-                  {noKeyConfigured && (
-                    <div className="mb-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-semibold flex items-center gap-2">
-                      <Icon name="alert" className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>No API key configured. Enter your YouTube Data API v3 key to load live shorts.</span>
-                    </div>
-                  )}
-                  <p className="text-[11px] text-zinc-400 mb-3 leading-relaxed">
-                    Enter your Google Developer API key. Without a key, only the scenic fallback stream is available.
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      id="api-key-input-field"
-                      type="password"
-                      placeholder="Paste YouTube Data API v3 key..."
-                      value={tempKey}
-                      onChange={(e) => setTempKey(e.target.value)}
-                      className="flex-1 bg-white/5 border border-white/10 text-white text-xs rounded-lg px-3 py-2 outline-none focus:border-indigo-500/50"
-                    />
-                    <button
-                      id="api-key-save-btn"
-                      onClick={saveApiKey}
-                      disabled={!tempKey.trim()}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 disabled:opacity-40 text-white text-xs px-3 py-2 rounded-lg font-bold transition-all cursor-pointer shadow-[0_0_10px_rgba(99,102,241,0.3)]"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                  {noKeyConfigured ? (
-                    <div className="mt-2 text-[10px] text-red-400 flex items-center gap-1">
-                      <Icon name="alert" className="w-3 h-3" />
-                      <span>API key required to fetch live content</span>
-                    </div>
-                  ) : isUsingFallback ? (
-                    <div className="mt-2 text-[10px] text-amber-500">Currently running on failsafe local scenic stream</div>
-                  ) : (
-                    <div className="mt-2 text-[10px] text-emerald-400 flex items-center gap-1">
-                      <Icon name="check" className="w-3 h-3" />
-                      <span>YouTube Cloud API connectivity ready</span>
+                  {/* Suggestion / search history dropdown */}
+                  {showRecentDropdown && recentSearches.length > 0 && (
+                    <div className="absolute top-11 left-0 right-0 bg-[#121216]/95 border border-white/10 backdrop-blur-2xl rounded-xl p-2.5 shadow-2xl z-50">
+                      <div className="flex justify-between items-center px-2 pb-1.5 border-b border-white/5 mb-1.5 text-[9px] uppercase tracking-wider font-mono text-zinc-500">
+                        <span>Recent Searches</span>
+                        <button onClick={onClearRecent} className="hover:text-red-400 transition-colors">Clear All</button>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {recentSearches.map((s, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleSuggestionClick(s)}
+                            className="flex items-center gap-2 px-2 py-1.5 text-[11px] text-zinc-300 hover:text-white hover:bg-white/5 rounded-md text-left transition-colors font-semibold"
+                          >
+                            <Icon name="clock" className="w-3 h-3 text-zinc-500" />
+                            <span className="truncate">{s}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
-              )}
+
+                <button
+                  onClick={onToggleTrending}
+                  title="Toggle Trending Feed"
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                    isTrendingMode
+                      ? "bg-red-500/20 border-red-500/50 text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)]"
+                      : "bg-white/5 border-white/5 text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Icon name="fire" className="w-4 h-4" />
+                </button>
+
+                <button
+                  id="api-key-toggle-btn"
+                  onClick={() => {
+                    setTempKey(apiKey);
+                    setShowKeyPanel(!showKeyPanel);
+                  }}
+                  title="Configure Credentials"
+                  className={`w-8.5 h-8.5 rounded-full flex items-center justify-center border transition-all ${
+                    isUsingFallback
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20"
+                      : "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
+                  }`}
+                >
+                  <Icon name="key" className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
+
+            {/* API settings popup panel overlay with active verification indicator */}
+            {showKeyPanel && (
+              <div id="key-popup-overlay" className="absolute top-20 right-4 sm:right-8 w-80 p-5 rounded-2xl bg-[#0F0F12]/95 border border-white/10 shadow-2xl backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-250 select-text z-50">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="text-white text-xs font-bold font-display tracking-widest uppercase flex items-center gap-2">
+                    <Icon name="key" className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Credentials Terminal</span>
+                  </h4>
+                  <button
+                    id="close-key-panel-btn"
+                    onClick={() => setShowKeyPanel(false)}
+                    className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Icon name="x" className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <p className="text-[11px] text-zinc-400 mb-3.5 leading-relaxed">
+                  Provide your official YouTube Data v3 API Key to process actual query responses. Otherwise, local failsafe cinetropes loaded. Stored locally.
+                </p>
+                
+                <div className="flex gap-2">
+                  <input
+                    id="api-key-input-field"
+                    type="password"
+                    placeholder="AIzaSy..."
+                    value={tempKey}
+                    onChange={(e) => setTempKey(e.target.value)}
+                    className="flex-1 bg-black/60 border border-white/10 text-white text-xs rounded-xl px-3.5 py-2 outline-none focus:border-indigo-500/70 font-mono"
+                  />
+                  <button
+                    id="api-key-save-btn"
+                    onClick={() => {
+                      onChangeApiKey(tempKey);
+                      setShowKeyPanel(false);
+                    }}
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-white text-xs px-4 py-2 rounded-xl font-bold transition-all shadow-lg"
+                  >
+                    Apply
+                  </button>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-2 text-[10px] font-mono tracking-widest text-zinc-400">
+                  <div className="flex justify-between items-center">
+                    <span>API Interface:</span>
+                    {isUsingFallback ? (
+                      <span className="text-amber-500 font-bold">Failsafe Demo</span>
+                    ) : (
+                      <span className="text-emerald-400 font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>Connected</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex justify-between items-center text-[9px] text-zinc-500 leading-none">
+                    <span>Errors Handled:</span>
+                    <span>{apiStats.errorsCount} faults</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </header>
+        );
+      }
+
+      // -----------------------------------------------------------------------
+      // Custom Skeleton Loader Shimmer
+      // -----------------------------------------------------------------------
+      function VideoSkeleton() {
+        return (
+          <div className="w-full h-full max-w-[56.25vh] aspect-[9/16] relative bg-[#09090C] rounded-2xl border border-white/5 overflow-hidden flex flex-col justify-end p-6">
+            <div className="absolute inset-0 shimmer-bg opacity-30" />
+            <div className="w-2/3 h-4 bg-white/10 rounded-md mb-2" />
+            <div className="w-full h-3 bg-white/5 rounded-md mb-2" />
+            <div className="w-1/2 h-3 bg-white/5 rounded-md" />
           </div>
         );
       }
 
-      function VideoSection({ video, index, isActive, shouldLoadEmbed, isMuted, onTapMedia }) {
-        const [isPlaying,    setIsPlaying]    = useState(isActive);
+      // -----------------------------------------------------------------------
+      // Video Section with Support for Smart Embedded Preloads & Virtualization
+      // -----------------------------------------------------------------------
+      function VideoSection({
+        video,
+        index,
+        isActive,
+        shouldLoadEmbed,
+        isMuted,
+        onTapMedia,
+        historyCheck,
+        onMarkAsWatched
+      }) {
         const [feedbackIcon, setFeedbackIcon] = useState(null);
-        const [isBuffering,  setIsBuffering]  = useState(true);
+        const [isBuffering, setIsBuffering] = useState(isActive);
+        const touchStartY = useRef(0);
+        const touchStartX = useRef(0);
 
         useEffect(() => {
-          setIsPlaying(isActive);
-          if (!isActive) return;
-          setIsBuffering(true);
-          const t = setTimeout(() => setIsBuffering(false), 950);
-          return () => clearTimeout(t);
-        }, [isActive]);
+          if (isActive) {
+            setIsBuffering(true);
+            const timer = setTimeout(() => {
+              setIsBuffering(false);
+              onMarkAsWatched(video.id);
+            }, 1200);
+            return () => clearTimeout(timer);
+          }
+        }, [isActive, video.id]);
 
         function handleMediaTap() {
-          const next = !isPlaying;
-          setIsPlaying(next);
-          setFeedbackIcon(next ? "play" : "pause");
           onTapMedia();
-          setTimeout(() => setFeedbackIcon(null), 550);
+          const nextIcon = isMuted ? "volume" : "volumeX";
+          setFeedbackIcon(nextIcon);
+          setTimeout(() => setFeedbackIcon(null), 600);
         }
 
-        const ytQuery = [
-          `autoplay=${isActive && isPlaying ? 1 : 0}`,
+        // Gesture listeners
+        function handleTouchStart(e) {
+          touchStartY.current = e.touches[0].clientY;
+          touchStartX.current = e.touches[0].clientX;
+        }
+
+        function handleTouchEnd(e) {
+          const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+          const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+          // Detect horizontal swipe gestures for actions
+          if (Math.abs(deltaX) > 80 && Math.abs(deltaY) < 40) {
+            if (deltaX < 0) {
+              // Swipe Left: Activate Comments overlay
+              const commentsBtn = document.getElementById(`comments-btn-${index}`);
+              if (commentsBtn) commentsBtn.click();
+            } else {
+              // Swipe Right: Open system Share panel
+              const shareBtn = document.getElementById(`share-btn-${index}`);
+              if (shareBtn) shareBtn.click();
+            }
+          }
+        }
+
+        const queryParams = [
+          `autoplay=${isActive ? 1 : 0}`,
           `mute=${isMuted ? 1 : 0}`,
-          "controls=0", "loop=1", `playlist=${video.id}`,
-          "enablejsapi=1", "playsinline=1", "modestbranding=1",
-          "rel=0", "showinfo=0", "iv_load_policy=3", "disablekb=1",
+          "controls=0",
+          "loop=1",
+          `playlist=${video.id}`,
+          "enablejsapi=1",
+          "playsinline=1",
+          "modestbranding=1",
+          "rel=0",
+          "showinfo=0",
+          "iv_load_policy=3",
+          "disablekb=1",
+          `origin=${window.location.origin}`
         ].join("&");
 
-        const embedUrl = `https://www.youtube.com/embed/${video.id}?${ytQuery}`;
+        const embedUrl = `https://www.youtube.com/embed/${video.id}?${queryParams}`;
 
         return (
-          <div id={`video-section-${index}`} className="relative w-full h-screen bg-black overflow-hidden flex items-center justify-center snap-start">
-            <div className="absolute inset-0 bg-neutral-950 pointer-events-none z-0">
-              <div className="absolute inset-x-0 top-1/4 h-1/2 opacity-35 blur-[120px]" style={{ backgroundImage: "radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%)" }} />
+          <div
+            id={`video-section-${index}`}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className="relative w-full h-screen bg-black overflow-hidden flex items-center justify-center snap-start"
+          >
+            {/* Ambient Background Blur Elements */}
+            <div className="absolute inset-0 bg-[#060608] pointer-events-none z-0">
+              <div className="absolute inset-x-0 top-1/4 h-1/2 opacity-25 blur-[120px]" style={{ backgroundImage: "radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 65%)" }} />
             </div>
 
-            <div className="relative w-full h-full max-w-[56.25vh] bg-black shadow-2xl flex items-center justify-center z-10">
+            <div className="relative w-full h-full max-w-[56.25vh] bg-[#000] shadow-[0_0_80px_rgba(0,0,0,0.95)] flex items-center justify-center z-10 transition-all duration-300">
               {shouldLoadEmbed ? (
                 <iframe
                   id={`yt-iframe-${video.id}`}
                   title={video.title}
                   src={embedUrl}
                   allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
-                  className="w-full h-full absolute inset-0 border-none transition-opacity duration-500 pointer-events-none"
+                  className="w-full h-full absolute inset-0 border-none transition-all duration-500 pointer-events-none"
                   loading={isActive ? "eager" : "lazy"}
                 />
               ) : (
-                <div className="absolute inset-0 bg-neutral-900 flex flex-col items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
-                    <Icon name="play" className="w-6 h-6 text-white/50 pl-1" />
+                <div className="absolute inset-0 bg-zinc-950 flex flex-col items-center justify-center">
+                  <img
+                    src={`https://img.youtube.com/vi/${video.id}/hqdefault.jpg`}
+                    alt={video.title}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover opacity-35 blur-xs"
+                  />
+                  <div className="absolute inset-0 bg-black/50" />
+                  <div className="absolute w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
+                    <Icon name="play" className="w-5 h-5 text-indigo-400 pl-1" />
                   </div>
                 </div>
               )}
 
-              <div id={`tap-layer-${index}`} onClick={handleMediaTap} data-tap-layer="true" className="absolute inset-0 cursor-pointer z-20 select-none active:bg-white/5 transition-colors duration-100" />
+              {/* User interaction click capture layer */}
+              <div
+                onClick={handleMediaTap}
+                className="absolute inset-0 cursor-pointer z-20 select-none active:bg-white/5 transition-colors duration-200"
+              />
 
+              {/* Tap feedback indicator */}
               {feedbackIcon && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 select-none">
-                  <div className="w-20 h-20 rounded-full bg-black/50 border border-white/20 flex items-center justify-center text-white scale-[1.3] opacity-0 animate-ping">
-                    <Icon name={feedbackIcon} className="w-8 h-8 fill-white" />
+                  <div className="w-16 h-16 rounded-full bg-black/75 border border-white/20 flex items-center justify-center text-white scale-[1.25] opacity-0 animate-[ping_0.6s_ease-out]">
+                    <Icon name={feedbackIcon} className="w-6 h-6 fill-white" />
                   </div>
                 </div>
               )}
 
-              <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-black/80 via-black/35 to-transparent pointer-events-none z-20" />
-              <div className="absolute bottom-0 inset-x-0 h-80 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none z-20" />
+              {/* Dynamic shader overlay gradients */}
+              <div className="absolute top-0 inset-x-0 h-44 bg-gradient-to-b from-black/90 via-black/45 to-transparent pointer-events-none z-20" />
+              <div className="absolute bottom-0 inset-x-0 h-96 bg-gradient-to-t from-black via-black/65 to-transparent pointer-events-none z-20" />
 
               {isBuffering && isActive && (
-                <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center pointer-events-none z-30">
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center pointer-events-none z-30">
                   <Icon name="refresh" className="w-8 h-8 text-indigo-400 animate-spin" />
                 </div>
               )}
 
-              <div className="absolute left-6 bottom-8 right-16 z-30 text-white flex flex-col gap-2.5 pointer-events-none">
-                <div className="flex items-center">
-                  <span className="bg-gradient-to-br from-indigo-500/90 to-purple-600/90 text-white font-bold text-[10px] tracking-widest uppercase px-3.5 py-1.5 rounded-xl border border-indigo-400/20 shadow-[0_0_12px_rgba(99,102,241,0.3)] pointer-events-auto cursor-pointer flex items-center gap-1.5 transition-all active:scale-95">
+              {/* Info captions box */}
+              <div className="absolute left-6 bottom-12 right-16 z-30 text-white flex flex-col gap-3.5 pointer-events-none">
+                <div className="flex gap-2 items-center flex-wrap">
+                  <span className="bg-neutral-900/40 backdrop-blur-md text-white font-bold text-[10px] font-display tracking-widest uppercase px-3.5 py-1.5 rounded-full border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.5)] pointer-events-auto cursor-pointer flex items-center gap-1.5 transition-all hover:bg-neutral-800 hover:scale-105 active:scale-95">
                     <span>@{video.channel}</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   </span>
+
+                  {historyCheck && (
+                    <span className="bg-white/10 text-zinc-300 text-[8px] font-mono tracking-wider font-bold uppercase rounded px-2 py-1 flex items-center gap-1">
+                      <Icon name="check" className="w-2.5 h-2.5 text-emerald-400" />
+                      <span>Watched</span>
+                    </span>
+                  )}
                 </div>
-                <h2 className="text-[14.5px] font-medium leading-relaxed tracking-wide text-neutral-100 drop-shadow-md pr-4 line-clamp-2">{video.title}</h2>
-                <div className="flex items-center gap-2 text-[10px] text-zinc-300 font-mono uppercase tracking-wider">
+
+                <h2 className="text-[13.5px] sm:text-[14.5px] font-medium leading-relaxed tracking-wide text-neutral-100 drop-shadow-md pr-4 line-clamp-2 select-text">
+                  {video.title}
+                </h2>
+
+                <div className="flex items-center gap-2 text-[9px] text-zinc-400 font-mono uppercase tracking-widest">
                   <span>{video.viewsLabel} views</span>
                   <span className="w-1 h-1 rounded-full bg-zinc-500" />
                   <span>{video.sharesLabel} shares</span>
                 </div>
+
                 {video.isFallback && (
-                  <div className="flex items-center gap-1.5 text-[10px] text-amber-500 font-semibold uppercase tracking-wider mt-1 opacity-75">
+                  <div className="flex items-center gap-1.5 text-[9px] text-amber-500 font-semibold font-mono uppercase tracking-widest mt-1 opacity-80">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    <span>Cinematic Fallback Stream</span>
+                    <span>Curated Scenic Stream Mode</span>
                   </div>
                 )}
               </div>
@@ -407,24 +846,9 @@
         );
       }
 
-      function ActionButton({ id, title, label, icon, active = false, extraClass = "", fill = "none", onClick }) {
-        return (
-          <div className="flex flex-col items-center">
-            <button
-              id={id} onClick={onClick} title={title}
-              className={`w-12 h-12 rounded-xl flex items-center justify-center border backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95 ${
-                active
-                  ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-indigo-400 text-white scale-[1.05] shadow-[0_0_15px_rgba(99,102,241,0.5)]"
-                  : "bg-zinc-900/40 border-white/5 text-zinc-400 hover:bg-zinc-900/85 hover:text-white"
-              } ${extraClass}`}
-            >
-              <Icon name={icon} className="w-5 h-5" fill={fill} />
-            </button>
-            <span className="text-[10px] text-zinc-300 font-bold mt-1 shadow-sm font-mono tracking-wider uppercase text-center">{label}</span>
-          </div>
-        );
-      }
-
+      // -----------------------------------------------------------------------
+      // Interactive Actions Sidebar Panel
+      // -----------------------------------------------------------------------
       function Sidebar({ video, index, onLikeToggle, onOpenComments, onShare, isMuted, onMuteToggle, viewMode, onViewModeToggle }) {
         const [likeAnimate, setLikeAnimate] = useState(false);
 
@@ -435,150 +859,527 @@
         }
 
         return (
-          <div className="absolute right-4 bottom-28 z-30 flex flex-col items-center gap-4 pointer-events-auto select-none">
+          <div className="absolute right-4 bottom-28 z-30 flex flex-col items-center gap-4.5 pointer-events-auto select-none">
             <ActionButton
               id={`sound-btn-${index}`}
-              title={isMuted ? "Unmute Audio" : "Mute Audio"}
-              label={isMuted ? "Silent" : "Audio"}
+              title={isMuted ? "Activate Audio" : "Silent Mute"}
+              label={isMuted ? "Muted" : "Active"}
               icon={isMuted ? "volumeX" : "volume"}
               active={!isMuted}
               onClick={onMuteToggle}
             />
+
             <ActionButton
               id={`like-btn-${index}`}
-              title="Like Video" label={video.likesLabel} icon="heart"
-              active={video.liked} extraClass={likeAnimate ? "animate-bounce" : ""}
+              title="Like stream"
+              label={video.likesLabel}
+              icon="heart"
+              active={video.liked}
+              extraClass={likeAnimate ? "scale-125 duration-300" : ""}
               fill={video.liked ? "currentColor" : "none"}
               onClick={handleLikeClick}
             />
-            <ActionButton id={`comments-btn-${index}`} title="Open Comments" label={video.commentsLabel} icon="message" onClick={onOpenComments} />
-            <ActionButton id={`share-btn-${index}`}    title="Share Link"    label={video.sharesLabel}   icon="share"   onClick={onShare} />
 
+            <ActionButton
+              id={`comments-btn-${index}`}
+              title="Open Forum Forum"
+              label={video.commentsLabel}
+              icon="message"
+              onClick={onOpenComments}
+            />
+
+            <ActionButton
+              id={`share-btn-${index}`}
+              title="Transmissions Share Links"
+              label={video.sharesLabel}
+              icon="share"
+              onClick={onShare}
+            />
+
+            {/* Desktop Quick Mode Toggle switch */}
             <div className="hidden sm:flex flex-col items-center">
               <button
-                id="viewmode-toggle-btn"
                 onClick={onViewModeToggle}
-                title={viewMode === "feed" ? "Switch to Grid Explorer" : "Switch to Reel Feed"}
-                className="w-12 h-12 rounded-xl flex items-center justify-center bg-zinc-900/80 border border-zinc-800 hover:border-indigo-500 text-indigo-400 hover:text-indigo-300 backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95"
+                title="Switch Grid Matrix"
+                className="w-11 h-11 rounded-full flex items-center justify-center bg-zinc-950/65 border border-white/5 hover:border-indigo-500/50 hover:text-white text-indigo-400 backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95"
               >
-                <Icon name={viewMode === "feed" ? "grid" : "scroll"} className="w-5 h-5" />
+                <Icon name="grid" className="w-4.5 h-4.5" />
               </button>
-              <span className="text-[9px] text-indigo-400 font-extrabold font-mono mt-1 shadow-sm tracking-widest uppercase text-center max-w-[56px] leading-3">
-                {viewMode === "feed" ? "Grid" : "Feed"}
+              <span className="text-[8px] text-zinc-500 font-bold font-mono mt-1 tracking-widest uppercase text-center max-w-[50px] leading-3">
+                Matrix
               </span>
             </div>
           </div>
         );
       }
 
+      function ActionButton({ id, title, label, icon, active = false, extraClass = "", fill = "none", onClick }) {
+        return (
+          <div className="flex flex-col items-center justify-center">
+            <button
+              id={id}
+              onClick={onClick}
+              title={title}
+              className={`w-11 h-11 rounded-full flex items-center justify-center border backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95 ${
+                active
+                  ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-indigo-400 text-white scale-[1.05] shadow-[0_0_15px_rgba(99,102,241,0.45)]"
+                  : "bg-[#09090c]/70 border-white/5 text-zinc-300 hover:bg-[#121217]/90 hover:text-white hover:border-white/10"
+              } ${extraClass}`}
+            >
+              <Icon name={icon} className="w-4.5 h-4.5" fill={fill} />
+            </button>
+            <span className="text-[9px] text-zinc-400 font-bold mt-1 shadow-sm font-mono tracking-wider uppercase text-center">
+              {label}
+            </span>
+          </div>
+        );
+      }
+
+      // -----------------------------------------------------------------------
+      // Interactive Comments & Safety System
+      // -----------------------------------------------------------------------
       function CommentPanel({ isOpen, onClose, videoId, videoTitle, comments, onAddComment }) {
         const [inputText, setInputText] = useState("");
-        const scrollRef = useRef(null);
+        const [commentError, setCommentError] = useState("");
+        const scrollContainerRef = useRef(null);
 
         useEffect(() => {
-          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+          }
         }, [comments, isOpen]);
 
         function handleSubmit(e) {
           e.preventDefault();
-          if (!inputText.trim()) return;
-          onAddComment(videoId, inputText.trim());
+          const cleanText = inputText.trim();
+          if (!cleanText) return;
+
+          // Strip HTML tags entirely for anti-XSS safety
+          const textStripped = cleanText.replace(/<\/?[^>]+(>|$)/g, "");
+          if (textStripped.length < 2) {
+            setCommentError("Message too short or invalid character inputs.");
+            return;
+          }
+
+          const hasSubmissionsBlocked = onAddComment(videoId, textStripped);
+          if (!hasSubmissionsBlocked) {
+            setCommentError("Rate limited: Avoid duplicate posts or fast spam transmissions.");
+            return;
+          }
+
           setInputText("");
+          setCommentError("");
         }
 
         return (
           <>
             <div
-              id="comment-backdrop"
               onClick={onClose}
-              className={`fixed inset-0 bg-black/60 z-40 transition-opacity duration-300 pointer-events-auto ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+              className={`fixed inset-0 bg-black/75 z-45 transition-opacity duration-300 pointer-events-auto ${
+                isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
             />
+
             <div
               id="comment-sheet"
-              className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto h-[65vh] bg-neutral-900/95 backdrop-blur-2xl border-t border-white/10 rounded-t-3xl z-50 flex flex-col transition-transform duration-300 ease-out transform pointer-events-auto ${isOpen ? "translate-y-0" : "translate-y-full"}`}
+              className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto h-[68vh] bg-[#0E0E12]/98 border-t border-white/10 rounded-t-3xl z-50 flex flex-col transition-transform duration-300 ease-out transform pointer-events-auto ${
+                isOpen ? "translate-y-0" : "translate-y-full"
+              }`}
             >
-              <div className="w-12 h-1 bg-white/20 rounded-full mx-auto my-3 flex-shrink-0" />
-              <div className="px-5 pb-3 border-b border-white/10 flex justify-between items-start gap-4">
+              <div className="w-10 h-1 bg-white/15 rounded-full mx-auto my-3 flex-shrink-0" />
+
+              <div className="px-5 pb-3.5 border-b border-white/5 flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-white font-bold text-base flex items-center gap-2">
+                  <h3 className="text-white font-bold font-display text-sm tracking-widest uppercase flex items-center gap-2">
                     <Icon name="message" className="w-4 h-4 text-indigo-400" />
-                    <span>Comments ({comments.length})</span>
+                    <span>User Forum Dialogs ({comments.length})</span>
                   </h3>
-                  <p className="text-xs text-zinc-500 truncate mt-0.5" title={videoTitle}>{videoTitle}</p>
+                  <p className="text-[10px] text-zinc-500 truncate mt-0.5 font-mono uppercase tracking-wider" title={videoTitle}>{videoTitle}</p>
                 </div>
-                <button id="close-comments-sheet" onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
-                  <Icon name="x" className="w-4 h-4" />
+                <button
+                  onClick={onClose}
+                  className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <Icon name="x" className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scroll-smooth">
+              {/* Comments scroll window */}
+              <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scroll-smooth no-scrollbar">
                 {comments.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center py-10 opacity-40">
-                    <Icon name="message" className="w-10 h-10 mb-2 text-indigo-400" />
-                    <p className="text-sm font-medium text-white">No comments yet</p>
-                    <p className="text-xs text-white">Be the first to share your thoughts.</p>
+                  <div className="h-full flex flex-col items-center justify-center text-center py-10 opacity-30">
+                    <Icon name="message" className="w-9 h-9 mb-2 text-indigo-400" />
+                    <p className="text-xs font-bold uppercase tracking-widest text-white font-mono">Channel Quiet</p>
+                    <p className="text-[9px] text-zinc-400 mt-1 uppercase tracking-wider">Transmit the first secure comment broadcast below.</p>
                   </div>
                 ) : (
                   comments.map((item) => (
-                    <div key={item.id} className="flex gap-3 text-sm">
-                      <div className={`w-9 h-9 rounded-full ${item.avatarColor} text-white font-bold text-xs flex items-center justify-center shadow-inner flex-shrink-0 select-none`}>
-                        {item.username.charAt(0).toUpperCase()}
+                    <div key={item.id} className="flex gap-3 text-sm animate-in fade-in duration-200">
+                      <div className={`w-8.5 h-8.5 rounded-full ${item.avatarColor || 'bg-indigo-600'} text-white font-bold text-xs flex items-center justify-center shadow-inner flex-shrink-0 select-none`}>
+                        {sanitizeString(item.username).charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0 bg-white/5 rounded-2xl px-4 py-2.5 border border-white/5">
-                        <div className="flex justify-between items-baseline mb-0.5 gap-2">
-                          <span className="font-bold text-indigo-300 text-[13px]">{item.username}</span>
-                          <span className="text-[10px] text-zinc-500 font-medium">{item.timestamp}</span>
+                        <div className="flex justify-between items-baseline mb-1 gap-2">
+                          <span className="font-bold text-indigo-300 text-[11.5px] font-mono">@{sanitizeString(item.username)}</span>
+                          <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">{item.timestamp}</span>
                         </div>
-                        <p className="text-white/95 text-[13.5px] leading-relaxed break-words">{item.text}</p>
+                        <p className="text-zinc-200 text-xs leading-relaxed break-words select-text">{sanitizeString(item.text)}</p>
                       </div>
                     </div>
                   ))
                 )}
               </div>
 
-              <form onSubmit={handleSubmit} className="p-4 border-t border-white/5 bg-zinc-950 flex gap-3 items-center">
-                <input
-                  id="new-comment-input"
-                  type="text"
-                  placeholder="Add a clean comment..."
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  className="flex-1 bg-white/5 text-white placeholder-white/30 text-sm border border-white/10 rounded-full px-5 py-2.5 outline-none focus:border-indigo-500 transition-colors"
-                />
-                <button
-                  id="comment-post-btn"
-                  type="submit"
-                  disabled={!inputText.trim()}
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 disabled:opacity-40 hover:opacity-90 active:scale-95 flex items-center justify-center text-white transition-all cursor-pointer flex-shrink-0 shadow-lg shadow-indigo-500/20 border border-indigo-400/20"
-                >
-                  <Icon name="send" className="w-4 h-4" />
-                </button>
+              {/* comment post form */}
+              <form onSubmit={handleSubmit} className="p-4 border-t border-white/5 bg-black/90 flex flex-col gap-2">
+                {commentError && (
+                  <div className="text-[10px] text-red-400 font-semibold px-2 flex items-center gap-1.5 animate-pulse">
+                    <Icon name="alert" className="w-3 h-3 flex-shrink-0" />
+                    <span>{commentError}</span>
+                  </div>
+                )}
+                <div className="flex gap-3 items-center">
+                  <input
+                    type="text"
+                    maxLength="120"
+                    placeholder="Transmitting connection thought..."
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    className="flex-1 bg-white/5 text-white placeholder-white/20 text-xs border border-white/5 focus:border-indigo-500/60 rounded-full px-4.5 py-3 outline-none transition-colors font-semibold"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!inputText.trim()}
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 disabled:opacity-30 hover:opacity-90 active:scale-95 flex items-center justify-center text-white transition-all cursor-pointer flex-shrink-0 shadow-md shadow-indigo-500/20"
+                  >
+                    <Icon name="send" className="w-4 h-4" />
+                  </button>
+                </div>
               </form>
             </div>
           </>
         );
       }
 
-      function GridExplorer({ videos, onSelectVideo, currentQuery, onSwitchToFeed }) {
+      // -----------------------------------------------------------------------
+      // Premium Share Overlay Modal
+      // -----------------------------------------------------------------------
+      function ShareModal({ isOpen, onClose, video, onShowToast }) {
+        const [copied, setCopied] = useState(false);
+        if (!isOpen || !video) return null;
+
+        const ytUrl = `https://www.youtube.com/watch?v=${video.id}`;
+
+        function handleCopyLink() {
+          navigator.clipboard.writeText(ytUrl).then(() => {
+            setCopied(true);
+            onShowToast("Matrix connection link copied");
+            setTimeout(() => setCopied(false), 2000);
+          });
+        }
+
+        function handleNativeShare() {
+          if (navigator.share) {
+            navigator.share({
+              title: video.title,
+              text: `Explore AETHER Shorts: ${video.title}`,
+              url: ytUrl
+            }).catch(() => {});
+          } else {
+            handleCopyLink();
+          }
+        }
+
         return (
-          <div className="w-full min-h-screen bg-black pt-28 pb-10 px-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
-                <div>
-                  <h1 className="text-white font-extralight text-2xl tracking-tight italic flex items-center gap-2">
-                    <Icon name="sparkles" className="w-5 h-5 text-indigo-400 animate-pulse" />
-                    <span className="font-semibold uppercase tracking-wider">Shorts</span>
-                  </h1>
-                  <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wider font-mono">System configured for: "{currentQuery}"</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-[9px] bg-indigo-500/10 text-indigo-400 font-extrabold px-3 py-1.5 rounded-md border border-indigo-500/20 tracking-widest uppercase font-mono">
-                    Shorts Matrix
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div onClick={onClose} className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity" />
+            
+            <div className="relative bg-[#0F0F14] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 pointer-events-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-white font-bold tracking-widest uppercase text-xs font-display flex items-center gap-2">
+                  <Icon name="share" className="w-4 h-4 text-indigo-400" />
+                  <span>Router Share Panel</span>
+                </h3>
+                <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+                  <Icon name="x" className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <div className="bg-black/40 border border-white/5 p-3 rounded-xl flex items-center gap-3">
+                  <img
+                    src={`https://img.youtube.com/vi/${video.id}/hqdefault.jpg`}
+                    alt={video.title}
+                    referrerPolicy="no-referrer"
+                    className="w-16 aspect-[9/16] object-cover rounded-md border border-white/10 flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-indigo-400 font-mono uppercase truncate">@{video.channel}</p>
+                    <p className="text-white text-xs font-semibold leading-relaxed line-clamp-2 mt-0.5">{video.title}</p>
                   </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={handleCopyLink}
+                    className="flex items-center justify-between w-full px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 text-xs text-white cursor-pointer font-bold duration-200"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Icon name="copy" className="w-4 h-4 text-indigo-300" />
+                      <span>{copied ? "Link Copied" : "Copy Shared URL Link"}</span>
+                    </span>
+                    {copied && <span className="text-[10px] text-emerald-400 uppercase tracking-widest font-mono">Selected</span>}
+                  </button>
+
+                  <button
+                    onClick={handleNativeShare}
+                    className="flex items-center gap-2.5 w-full px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-95 text-white rounded-xl transition-all text-xs font-bold shadow-lg cursor-pointer"
+                  >
+                    <Icon name="share" className="w-4 h-4 text-white" />
+                    <span>Trigger Device Native Share Router</span>
+                  </button>
+
+                  <a
+                    href={ytUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-1.5 w-full text-center py-2.5 text-[10px] text-zinc-400 hover:text-white uppercase font-mono tracking-widest transition-colors"
+                  >
+                    <span>Launch Original Youtube Server</span>
+                    <Icon name="external-link" className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // -----------------------------------------------------------------------
+      // Keyboard Help Guide Overlay Modal
+      // -----------------------------------------------------------------------
+      function HelpOverlay({ isOpen, onClose }) {
+        if (!isOpen) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div onClick={onClose} className="fixed inset-0 bg-black/85 backdrop-blur-md" />
+            <div className="relative bg-[#0A0A0E] border border-white/15 w-full max-w-md p-6 rounded-2xl shadow-3xl pointer-events-auto">
+              <div className="flex justify-between justify-items-center pb-3 border-b border-white/5 mb-4">
+                <h4 className="text-white text-xs font-bold font-display tracking-widest uppercase flex items-center gap-2">
+                  <Icon name="help" className="w-4 h-4 text-indigo-400" />
+                  <span>AETHER Command Deck Bindings</span>
+                </h4>
+                <button onClick={onClose} className="text-zinc-500 hover:text-white">
+                  <Icon name="x" className="w-4.5 h-4.5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3.5 font-mono text-[11px] text-zinc-300">
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-zinc-500 font-bold">▲ Arrow Up</span>
+                  <span className="text-indigo-300">Prev Video</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-zinc-500 font-bold">▼ Arrow Down</span>
+                  <span className="text-indigo-300">Next Video</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-zinc-500 font-bold">Key M</span>
+                  <span className="text-indigo-300">Mute Toggle</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-zinc-500 font-bold">Key L</span>
+                  <span className="text-indigo-300">Like Short</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-zinc-500 font-bold">Key C</span>
+                  <span className="text-indigo-300">Open Forum</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-zinc-500 font-bold">Key G</span>
+                  <span className="text-indigo-300">Matrix Toggle</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-zinc-500 font-bold">Esc</span>
+                  <span className="text-indigo-300">Close overlay</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-zinc-500 font-bold">Double Tap</span>
+                  <span className="text-indigo-300">Volume Swap</span>
+                </div>
+              </div>
+              
+              <p className="text-[10px] text-zinc-500 mt-4 leading-relaxed font-mono text-center">
+                Swipe Left/Right on active viewport grids for instant Forums and Share.
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      // -----------------------------------------------------------------------
+      // Advanced Analytics / Diagnostics Monitor Panel
+      // -----------------------------------------------------------------------
+      function DebugPanel({ videosCount, activeIndex, apiStatus, currentQuery, viewMode, isUsingFallback, isMuted, customCommentsCount, onClose }) {
+        const estMemory = estimateMemoryFootprint(videosCount, customCommentsCount);
+        return (
+          <div className="fixed bottom-10 left-4 z-40 bg-[#09090D]/95 border border-white/10 p-5 rounded-2xl w-72 shadow-2xl font-mono text-[10px] text-zinc-300 backdrop-blur-3xl animate-in slide-in-from-bottom-5 pointer-events-auto">
+            <div className="flex justify-between items-center pb-2 border-b border-white/10 mb-3">
+              <span className="text-indigo-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Icon name="analytics" className="w-3.5 h-3.5" />
+                <span>Diagnostic Monitor</span>
+              </span>
+              <button onClick={onClose} className="text-zinc-500 hover:text-white">
+                <Icon name="x" className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Video Registry:</span>
+                <span className="text-white font-semibold">{videosCount} Nodes loaded</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Active Pointer:</span>
+                <span className="text-white font-semibold">{activeIndex} Index</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Search Context:</span>
+                <span className="text-indigo-300 font-semibold truncate max-w-[120px]">"{currentQuery}"</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Interface Setup:</span>
+                <span className="text-white uppercase">{viewMode} matrix</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Est. Memory:</span>
+                <span className="text-white font-semibold">{estMemory} KB estimate</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Audio Node:</span>
+                <span className="text-white font-semibold">{isMuted ? "Muted" : "Active (Unmuted)"}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2.5 border-t border-white/5">
+                <span className="text-zinc-500">Connection:</span>
+                {isUsingFallback ? (
+                  <span className="text-amber-500 font-bold uppercase text-[9px]">Local Cinetropes fallback</span>
+                ) : (
+                  <span className="text-emerald-400 font-bold uppercase text-[9px] flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Real Cloud Sync</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // -----------------------------------------------------------------------
+      // Grid Explorer Component with Masonry Toggle and Dynamic Sorting
+      // -----------------------------------------------------------------------
+      function GridExplorer({
+        videos,
+        onSelectVideo,
+        currentQuery,
+        onLoadMore,
+        hasMore,
+        isLoading,
+        onSwitchToFeed
+      }) {
+        const [masonryMode, setMasonryMode] = useState(false);
+        const [sortRule, setSortRule] = useState("default"); // default, views, likes, recent/new
+        const gridSentinelRef = useRef(null);
+
+        useEffect(() => {
+          if (!onLoadMore || !hasMore || videos.length === 0) return;
+          const sentinel = gridSentinelRef.current;
+          if (!sentinel) return;
+
+          const observer = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting && !isLoading) {
+                  onLoadMore();
+                }
+              });
+            },
+            { threshold: 0.1, rootMargin: "250px" }
+          );
+
+          observer.observe(sentinel);
+          return () => observer.disconnect();
+        }, [videos.length, hasMore, isLoading, onLoadMore]);
+
+        const processedVideos = useMemo(() => {
+          const list = [...videos];
+          if (sortRule === "views") {
+            return list.sort((a,b) => b.views - a.views);
+          } else if (sortRule === "likes") {
+            return list.sort((a,b) => b.likes - a.likes);
+          } else if (sortRule === "recent") {
+            return list.sort((a,b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+          }
+          return list;
+        }, [videos, sortRule]);
+
+        return (
+          <div className="w-full min-h-screen bg-[#070709] bg-gradient-to-br from-[#09090C] to-[#050507] pt-24 pb-24 px-4 sm:px-8 md:px-12">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-white/10 pb-5">
+                <div>
+                  <h1 className="text-white font-bold font-display text-lg tracking-widest uppercase flex items-center gap-2">
+                    <Icon name="sparkles" className="w-4 h-4 text-indigo-400 animate-pulse" />
+                    <span>Digital Matrix Index</span>
+                  </h1>
+                  <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-widest font-mono">
+                    Exploring Registry: "{currentQuery}"
+                  </p>
+                </div>
+
+                {/* Grid controls, Sorting and Masonry toggle */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5 bg-black/45 p-1 rounded-lg border border-white/5 text-[10px] font-mono tracking-wider">
+                    <button
+                      onClick={() => setSortRule("default")}
+                      className={`px-2.5 py-1 rounded ${sortRule === "default" ? "bg-white/10 text-white" : "text-zinc-400"}`}
+                    >
+                      Default
+                    </button>
+                    <button
+                      onClick={() => setSortRule("views")}
+                      className={`px-2.5 py-1 rounded ${sortRule === "views" ? "bg-white/10 text-white" : "text-zinc-400"}`}
+                    >
+                      Popular
+                    </button>
+                    <button
+                      onClick={() => setSortRule("likes")}
+                      className={`px-2.5 py-1 rounded ${sortRule === "likes" ? "bg-white/10 text-white" : "text-zinc-400"}`}
+                    >
+                      Likes
+                    </button>
+                    <button
+                      onClick={() => setSortRule("recent")}
+                      className={`px-2.5 py-1 rounded ${sortRule === "recent" ? "bg-white/10 text-white" : "text-zinc-400"}`}
+                    >
+                      Recent
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setMasonryMode(!masonryMode)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider font-mono transition-all ${
+                      masonryMode
+                        ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300"
+                        : "bg-black/40 border-white/5 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    <span>{masonryMode ? "Masonry Active" : "Grid Classic"}</span>
+                  </button>
+
                   <button
                     onClick={onSwitchToFeed}
-                    title="Switch to Reel Feed"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-zinc-900/80 border border-zinc-700 hover:border-indigo-500 text-indigo-400 hover:text-indigo-300 text-[10px] font-bold uppercase tracking-widest font-mono transition-all cursor-pointer"
+                    title="Switch feed mode"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-zinc-900 border border-white/5 hover:border-indigo-500 text-indigo-400 hover:text-indigo-300 text-[10px] font-bold uppercase tracking-widest font-mono transition-all duration-200 cursor-pointer"
                   >
                     <Icon name="scroll" className="w-3.5 h-3.5" />
                     <span>Feed</span>
@@ -586,147 +1387,312 @@
                 </div>
               </div>
 
-              {videos.length === 0 ? (
+              {processedVideos.length === 0 ? (
                 <div className="flex flex-col items-center justify-center text-center py-24 text-neutral-500">
-                  <Icon name="image" className="w-12 h-12 mb-3 text-neutral-600 animate-bounce" />
-                  <p className="text-base font-semibold text-white">No reels loaded</p>
-                  <p className="text-xs mt-1">Try another search query.</p>
+                  <Icon name="image" className="w-10 h-10 mb-3 text-neutral-600 animate-pulse" />
+                  <p className="text-xs font-bold uppercase tracking-widest text-white">No nodes connected</p>
+                  <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-widest">Loading feed segments or empty grid index...</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {videos.map((video, index) => (
-                    <div
-                      id={`grid-card-${index}`}
-                      key={video.id + index}
-                      onClick={() => onSelectVideo(index)}
-                      className="group relative aspect-[9/16] bg-zinc-900/40 rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 transform hover:-translate-y-1.5"
-                    >
-                      <div className="absolute inset-0 z-0">
-                        <img
-                          src={`https://img.youtube.com/vi/${video.id}/hqdefault.jpg`}
-                          alt={video.title}
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-black/15 group-hover:via-black/20 transition-colors" />
-                      </div>
+                <div className={
+                  masonryMode
+                    ? "columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-5"
+                    : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 animate-in fade-in duration-300"
+                }>
+                  {processedVideos.map((video, index) => {
+                    // Unique card variation height for Masonry
+                    const variableAspectClass = masonryMode
+                      ? (index % 3 === 0 ? "aspect-[9/18]" : index % 2 === 0 ? "aspect-[9/15]" : "aspect-[9/16]")
+                      : "aspect-[9/16]";
 
-                      <div className="absolute top-3 left-3 z-10">
-                        {video.isFallback && (
-                          <span className="bg-amber-500/95 text-black font-extrabold text-[8px] tracking-wider px-2 py-0.5 rounded-sm uppercase select-none font-mono">Scenic</span>
-                        )}
-                      </div>
+                    return (
+                      <div
+                        key={video.id + index}
+                        onClick={() => {
+                          const originalIdx = videos.findIndex(v => v.id === video.id);
+                          onSelectVideo(originalIdx >= 0 ? originalIdx : index);
+                        }}
+                        className={`group relative ${variableAspectClass} bg-[#101014]/60 border border-white/5 rounded-2xl overflow-hidden cursor-pointer hover:border-indigo-500/50 hover:shadow-[0_12px_40px_-12px_rgba(99,102,241,0.3)] transition-all duration-500 transform hover:-translate-y-1.5 mb-5 select-none`}
+                      >
+                        {/* Shimmer Placeholder before high quality thumbnail image loading completes */}
+                        <div className="absolute inset-0 z-0">
+                          <img
+                            src={`https://img.youtube.com/vi/${video.id}/hqdefault.jpg`}
+                            alt={video.title}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover opacity-70 group-hover:opacity-95 group-hover:scale-105 transition-all duration-700"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#060608] via-black/35 to-black/10 group-hover:via-black/20 transition-all duration-300" />
+                        </div>
 
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 z-10 transition-opacity duration-300">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/40 scale-75 group-hover:scale-100 transition-transform duration-300">
-                          <Icon name="play" className="w-5 h-5 fill-white pl-0.5" />
+                        <div className="absolute top-3 left-3 z-10 flex gap-1 items-center flex-wrap">
+                          {video.isFallback && (
+                            <span className="bg-amber-500 text-black font-extrabold text-[8px] tracking-widest px-2 py-0.5 rounded font-mono uppercase">
+                              Scenic
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Overlapping Hover Play circle trigger element */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 z-10 transition-opacity duration-300">
+                          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300 border border-indigo-400/20">
+                            <Icon name="play" className="w-4.5 h-4.5 fill-white pl-0.5" />
+                          </div>
+                        </div>
+
+                        {/* Title and stats footer information captions box */}
+                        <div className="absolute bottom-0 inset-x-0 p-4 z-10 text-white flex flex-col gap-1.5 bg-gradient-to-t from-[#050508] via-[#050508]/75 to-transparent">
+                          <span className="text-[9px] text-indigo-400 font-extrabold font-mono tracking-widest uppercase truncate">@{video.channel}</span>
+                          <h3 className="text-[11.5px] font-bold leading-normal line-clamp-2 text-zinc-300 group-hover:text-white transition-colors">
+                            {video.title}
+                          </h3>
+                          <div className="flex items-center justify-between text-[9px] text-zinc-500 font-mono mt-1 pt-2 border-t border-white/5">
+                            <span className="flex items-center gap-1"><Icon name="heart" className="w-3 h-3 text-indigo-400" />{video.likesLabel}</span>
+                            <span>{video.viewsLabel} views</span>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="absolute bottom-0 inset-x-0 p-4 z-10 text-white flex flex-col gap-1.5">
-                        <span className="text-[10px] text-indigo-400 font-extrabold font-mono tracking-widest uppercase truncate">@{video.channel}</span>
-                        <h3 className="text-xs font-bold leading-relaxed line-clamp-2 text-zinc-100 group-hover:text-white transition-colors">{video.title}</h3>
-                        <div className="flex gap-3 text-[10px] text-zinc-500 font-mono mt-1 pt-2 border-t border-white/10">
-                          <span className="flex items-center gap-1"><Icon name="heart" className="w-3.5 h-3.5 text-indigo-400" /><span>{video.likesLabel}</span></span>
-                          <span className="flex items-center gap-1"><Icon name="message" className="w-3.5 h-3.5 text-purple-400" /><span>{video.commentsLabel}</span></span>
-                          <span>{video.viewsLabel}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
+
+              {/* Grid load pagination sentinel */}
+              <div ref={gridSentinelRef} className="w-full h-24 flex items-center justify-center mt-6">
+                {isLoading && (
+                  <div className="flex items-center gap-2 text-indigo-400 font-medium text-[10px] font-mono uppercase tracking-widest bg-zinc-950/80 border border-white/5 py-2 px-5 rounded-full shadow-inner animate-pulse">
+                    <Icon name="refresh" className="w-3.5 h-3.5 animate-spin" />
+                    <span>Processing Cloud Sync Matrices...</span>
+                  </div>
+                )}
+                {!hasMore && videos.length > 0 && (
+                  <div className="text-zinc-600 font-semibold text-[9px] font-mono uppercase tracking-[0.25em] bg-white/5 px-5 py-2 rounded-full">
+                    ALL INTERFACES FULLY RETRIEVED
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
       }
 
       // -----------------------------------------------------------------------
-      // 5. App (root)
+      // Main App Component Container Orchestrator
       // -----------------------------------------------------------------------
-
       function App() {
-        // API key initialises solely from localStorage; empty string if absent
-        const [apiKey,          setApiKey]          = useState(() => localStorage.getItem("yt_api_key") || "");
-        const [videos,          setVideos]          = useState([]);
-        const [currentQuery,    setCurrentQuery]    = useState(DEFAULT_SEARCH_QUERY);
-        const [activeIndex,     setActiveIndex]     = useState(0);
-        const [isMuted,         setIsMuted]         = useState(true);
-        const [showSoundPrompt, setShowSoundPrompt] = useState(true);
-        const [viewMode,        setViewMode]        = useState("feed");
-        const [isLoading,       setIsLoading]       = useState(false);
+        // Load initial session states from storage safely
+        const [apiKey, setApiKey] = useState(() => ApiService.getApiKey() || "");
+        const [isMuted, setIsMuted] = useState(() => {
+          try {
+            const savedState = localStorage.getItem("aether_session");
+            if (savedState) {
+              const parsed = JSON.parse(savedState);
+              return parsed.isMuted !== undefined ? parsed.isMuted : true;
+            }
+          } catch(e){}
+          return true;
+        });
+
+        const [viewMode, setViewMode] = useState(() => {
+          try {
+            const savedState = localStorage.getItem("aether_session");
+            if (savedState) {
+              const parsed = JSON.parse(savedState);
+              return parsed.viewMode || "feed";
+            }
+          } catch(e){}
+          return "feed";
+        });
+
+        const [currentQuery, setCurrentQuery] = useState(() => {
+          try {
+            const savedState = localStorage.getItem("aether_session");
+            if (savedState) {
+              const parsed = JSON.parse(savedState);
+              return parsed.currentQuery || DEFAULT_SEARCH_QUERY;
+            }
+          } catch(e){}
+          return DEFAULT_SEARCH_QUERY;
+        });
+
+        const [activeIndex, setActiveIndex] = useState(() => {
+          try {
+            const savedState = localStorage.getItem("aether_session");
+            if (savedState) {
+              const parsed = JSON.parse(savedState);
+              return parsed.activeIndex || 0;
+            }
+          } catch(e){}
+          return 0;
+        });
+
+        const [videos, setVideos] = useState([]);
+        const [showSoundPrompt, setShowSoundPrompt] = useState(isMuted);
+        const [isLoading, setIsLoading] = useState(false);
         const [isUsingFallback, setIsUsingFallback] = useState(false);
-        const [nextPageToken,   setNextPageToken]   = useState("");
-        const [hasMoreVideos,   setHasMoreVideos]   = useState(true);
-        const [allComments,     setAllComments]     = useState(() => INITIAL_COMMENTS);
-        const [isCommentsOpen,  setIsCommentsOpen]  = useState(false);
-        const [toastMessage,    setToastMessage]    = useState(null);
+        const [nextPageToken, setNextPageToken] = useState("");
+        const [hasMoreVideos, setHasMoreVideos] = useState(true);
+        const [apiStats, setApiStats] = useState({ errorsCount: 0 });
 
-        const feedContainerRef  = useRef(null);
-        const toastTimeoutRef   = useRef(null);
+        // Storage states persistent
+        const [recentSearches, setRecentSearches] = useState(() => {
+          try {
+            return JSON.parse(localStorage.getItem("yt_recent_searches")) || [];
+          } catch (e) {
+            return [];
+          }
+        });
+
+        const [watchHistory, setWatchHistory] = useState(() => {
+          try {
+            return JSON.parse(localStorage.getItem("yt_watch_history")) || [];
+          } catch (e) {
+            return [];
+          }
+        });
+
+        const [allComments, setAllComments] = useState(() => {
+          try {
+            const custom = JSON.parse(localStorage.getItem("yt_comments")) || {};
+            // Deep merge on mount with standard default lists
+            const merged = { ...INITIAL_COMMENTS };
+            Object.keys(custom).forEach((id) => {
+              merged[id] = [...(INITIAL_COMMENTS[id] || []), ...custom[id]];
+            });
+            return merged;
+          } catch (e) {
+            return INITIAL_COMMENTS;
+          }
+        });
+
+        // Interfaces control toggling overlays
+        const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+        const [isShareOpen, setIsShareOpen] = useState(false);
+        const [isHelpOpen, setIsHelpOpen] = useState(false);
+        const [isDebugOpen, setIsDebugOpen] = useState(false);
+        const [isTrendingMode, setIsTrendingMode] = useState(false);
+        const [toastMessage, setToastMessage] = useState(null);
+
+        // Security / timing anti-spam comments lock
+        const lastCommentTimeRef = useRef(0);
+
+        const feedContainerRef = useRef(null);
+        const toastTimeoutRef = useRef(null);
         const loadedVideoIdsRef = useRef(new Set());
-        const requestGenRef     = useRef(0);
-        const apiKeyRef         = useRef(apiKey);
-        const isLoadingMoreRef  = useRef(false);
-        // Sentinel ref for IntersectionObserver-based infinite scroll
-        const sentinelRef       = useRef(null);
+        const requestGenerationRef = useRef(0);
+        const apiKeyRef = useRef(apiKey);
+        const isLoadingMoreRef = useRef(false);
 
-        const noKeyConfigured = !apiKey.trim();
+        // Auto Refresh trending interval
+        const trendingRefreshIntervalRef = useRef(null);
 
         useEffect(() => {
           apiKeyRef.current = apiKey;
-          localStorage.setItem("yt_api_key", apiKey);
+          ApiService.saveApiKey(apiKey);
         }, [apiKey]);
 
-        function showToast(message) {
-          if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-          setToastMessage(message);
-          toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2800);
+        // Save session after active index changes
+        useEffect(() => {
+          try {
+            const dataState = JSON.stringify({ currentQuery, activeIndex, viewMode, isMuted });
+            localStorage.setItem("aether_session", dataState);
+          } catch(e){}
+        }, [currentQuery, activeIndex, viewMode, isMuted]);
+
+        // Persistent custom comments block to localStorage
+        function persistCustomComment(vidId, itemComment) {
+          try {
+            const existingStore = JSON.parse(localStorage.getItem("yt_comments")) || {};
+            existingStore[vidId] = [...(existingStore[vidId] || []), itemComment];
+            localStorage.setItem("yt_comments", JSON.stringify(existingStore));
+          } catch (e) {
+            console.error("Failed to persist comments state", e);
+          }
         }
 
-        // -- Core fetch --
-        async function fetchDiscoveryBatch(baseQuery, { reset = false, generation = requestGenRef.current } = {}) {
+        function showMessage(msg) {
+          if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+          setToastMessage(msg);
+          toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2500);
+        }
+
+        // --- Core batch processing ---
+        const fetchDiscoveryBatch = useCallback(async (baseQuery, options = {}) => {
+          const { reset = false, generation = requestGenerationRef.current, isTrending = isTrendingMode } = options;
           const pageToken = reset ? "" : nextPageToken;
+
           if (reset) {
             loadedVideoIdsRef.current = new Set();
             setNextPageToken("");
             setHasMoreVideos(true);
           }
-          const data = await ApiService.fetchBatch(baseQuery, apiKeyRef.current, pageToken);
-          if (generation !== requestGenRef.current) return [];
-          const newToken = data.nextPageToken || "";
-          setNextPageToken(newToken);
-          setHasMoreVideos(Boolean(newToken));
-          const fresh = [];
-          for (const item of data.items || []) {
-            const formatted = ApiService.formatApiVideo(item);
-            if (!formatted || loadedVideoIdsRef.current.has(formatted.id)) continue;
-            loadedVideoIdsRef.current.add(formatted.id);
-            fresh.push(formatted);
+
+          // Dynamic category trial branching when queries results are exhausted or finished
+          const targetQuery = baseQuery;
+          const result = await ApiService.fetchBatch(targetQuery, apiKeyRef.current, pageToken, isTrending);
+
+          if (generation !== requestGenerationRef.current) {
+            return [];
           }
-          return fresh;
-        }
 
-        // -- Search / reset --
-        async function handleSearch(query) {
-          const q          = (query || DEFAULT_SEARCH_QUERY).trim() || DEFAULT_SEARCH_QUERY;
-          const generation = requestGenRef.current + 1;
-          requestGenRef.current = generation;
+          setNextPageToken(result.nextPageToken);
+          setHasMoreVideos(Boolean(result.nextPageToken));
 
-          setCurrentQuery(q);
+          let processed = [];
+          for (const item of result.videos) {
+            // Avoid Watch History overlap recommendations
+            if (watchHistory.includes(item.id)) continue;
+            if (loadedVideoIdsRef.current.has(item.id)) continue;
+            loadedVideoIdsRef.current.add(item.id);
+            processed.push(item);
+          }
+
+          // Endeavor trail branching if results list is empty. Endless Recommendation Engine.
+          if (processed.length === 0 && !isTrending) {
+            const branchQueries = RELATED_SEARCHES[baseQuery] || RELATED_SEARCHES[DEFAULT_SEARCH_QUERY];
+            const randomIndexQuery = Math.floor(Math.random() * branchQueries.length);
+            const alternateQueryTarget = branchQueries[randomIndexQuery];
+            
+            showMessage(`Transition discovery: Loading ${alternateQueryTarget}...`);
+            const subResult = await ApiService.fetchBatch(alternateQueryTarget, apiKeyRef.current, "", false);
+            for (const item of subResult.videos) {
+              if (watchHistory.includes(item.id)) continue;
+              if (loadedVideoIdsRef.current.has(item.id)) continue;
+              loadedVideoIdsRef.current.add(item.id);
+              processed.push(item);
+            }
+          }
+
+          return processed;
+        }, [nextPageToken, isTrendingMode, watchHistory]);
+
+        // --- Execute Search / Trigger loader ---
+        const handleSearch = useCallback(async (query, forceTrending = false) => {
+          const isTrendRequest = forceTrending;
+          const trimmedQuery = (query || DEFAULT_SEARCH_QUERY).trim();
+
+          const generation = requestGenerationRef.current + 1;
+          requestGenerationRef.current = generation;
+
+          setCurrentQuery(trimmedQuery);
           setVideos([]);
-          setActiveIndex(0);
           setIsLoading(true);
           setIsUsingFallback(false);
-          setViewMode("feed");
           setIsCommentsOpen(false);
           isLoadingMoreRef.current = false;
 
-          requestAnimationFrame(() => {
-            if (feedContainerRef.current) feedContainerRef.current.scrollTo({ top: 0, behavior: "auto" });
-          });
+          // Push into persistent recent searches
+          if (!isTrendRequest && trimmedQuery && trimmedQuery !== DEFAULT_SEARCH_QUERY) {
+            setRecentSearches((prev) => {
+              const filtered = prev.filter((s) => s.toLowerCase() !== trimmedQuery.toLowerCase());
+              const updated = [trimmedQuery, ...filtered].slice(0, MAX_HISTORY_LEN);
+              localStorage.setItem("yt_recent_searches", JSON.stringify(updated));
+              return updated;
+            });
+          }
 
-          // If no key, go straight to fallback
+          // Trigger fallback if api key is completely absent
           if (!apiKeyRef.current.trim()) {
             const fallback = FALLBACK_VIDEOS.map((v) => ({ ...v, ...createEngagementMetrics() }));
             loadedVideoIdsRef.current = new Set(fallback.map((v) => v.id));
@@ -734,264 +1700,438 @@
             setHasMoreVideos(false);
             setVideos(shuffle(fallback));
             setIsLoading(false);
-            showToast("No API key — scenic fallback stream loaded");
+            showMessage("Curated Demo Mode fallback streams loaded");
             return;
           }
 
           try {
-            const fresh = await fetchDiscoveryBatch(q, { reset: true, generation });
-            if (generation !== requestGenRef.current) return;
-            if (!fresh.length) throw new Error("No unique Shorts results yielded");
-            setVideos(fresh);
-            showToast(`Loaded ${fresh.length} ${q} shorts`);
-          } catch (err) {
-            if (generation !== requestGenRef.current) return;
-            console.warn("YouTube discovery failed; using fallback stream.", err);
-            const fallback = FALLBACK_VIDEOS.map((v) => ({ ...v, ...createEngagementMetrics() }));
-            loadedVideoIdsRef.current = new Set(fallback.map((v) => v.id));
+            const freshVideos = await fetchDiscoveryBatch(trimmedQuery, { reset: true, generation, isTrending: isTrendRequest });
+            if (generation !== requestGenerationRef.current) return;
+
+            if (!freshVideos.length) {
+              throw new Error("EMPTY_YIELD");
+            }
+
+            // Restore active index to 0 or cached index on first search load
+            setVideos(freshVideos);
+            showMessage(isTrendRequest ? "Syncing Trending Shorts Cloud..." : `Synced search details: ${freshVideos.length} nodes`);
+          } catch (e) {
+            if (generation !== requestGenerationRef.current) return;
+            console.warn("YouTube Cloud connection failed. Falling back.", e);
+            setApiStats(prev => ({ ...prev, errorsCount: prev.errorsCount + 1 }));
+
+            const fallback = FALLBACK_VIDEOS.map((video) => ({ ...video, ...createEngagementMetrics() }));
+            loadedVideoIdsRef.current = new Set(fallback.map((video) => video.id));
             setIsUsingFallback(true);
             setHasMoreVideos(false);
             setVideos(shuffle(fallback));
-            showToast("YouTube API failed; fallback stream loaded");
+            
+            // Customize user-facing informative API warning message triggers
+            let warningText = "Cloud API Quota Exceeded. Fallback loaded.";
+            if (e.message.includes("keyInvalid")) warningText = "Invalid API Credentials key. Demo Mode on.";
+            showMessage(warningText);
           } finally {
-            if (generation === requestGenRef.current) setIsLoading(false);
+            if (generation === requestGenerationRef.current) setIsLoading(false);
           }
-        }
+        }, [fetchDiscoveryBatch]);
 
-        // -- Infinite-scroll load-more (called by sentinel observer) --
-        const loadMoreVideos = useCallback(async () => {
-          if (isLoadingMoreRef.current || !hasMoreVideos || isUsingFallback) return;
+        // Initial launch bootstrapper
+        useEffect(() => {
+          handleSearch(currentQuery, isTrendingMode);
+        }, []);
+
+        // --- Endless Load next page action (Both Grid & Reel scroll sentinel targets) ---
+        const loadMoreEndlessVideos = useCallback(async () => {
+          if (isLoadingMoreRef.current || isLoading || !hasMoreVideos || videos.length === 0) return;
+
           isLoadingMoreRef.current = true;
-          const generation = requestGenRef.current;
+          const generation = requestGenerationRef.current;
           setIsLoading(true);
+
           try {
-            const more = await fetchDiscoveryBatch(currentQuery, { reset: false, generation });
-            if (generation !== requestGenRef.current) return;
-            if (more.length) {
-              setVideos((prev) => [...prev, ...more]);
-              showToast(`Added ${more.length} more ${currentQuery} shorts`);
+            const extra = await fetchDiscoveryBatch(currentQuery, { reset: false, generation });
+            if (generation !== requestGenerationRef.current) return;
+
+            if (extra.length > 0) {
+              setVideos((prev) => [...prev, ...extra]);
+              showMessage(`Sync connection: Add ${extra.length} nodes`);
             } else {
               setHasMoreVideos(false);
-              showToast("All shorts loaded");
+              showMessage("Full digital curation registry complete");
             }
-          } catch (err) {
-            if (generation !== requestGenRef.current) return;
-            console.warn("Endless loading paused after API failure.", err);
-            showToast("API limit reached; recommendations paused");
+          } catch (error) {
+            if (generation !== requestGenerationRef.current) return;
+            setHasMoreVideos(false);
+            showMessage("Additional API cloud frames denied.");
           } finally {
-            if (generation === requestGenRef.current) setIsLoading(false);
+            if (generation === requestGenerationRef.current) setIsLoading(false);
             isLoadingMoreRef.current = false;
           }
-        }, [currentQuery, hasMoreVideos, isUsingFallback]);
+        }, [currentQuery, hasMoreVideos, isLoading, videos.length, fetchDiscoveryBatch]);
 
-        // Initial load
-        useEffect(() => { handleSearch(DEFAULT_SEARCH_QUERY); }, []);
+        // Auto Refresh trending mechanism
+        useEffect(() => {
+          if (isTrendingMode) {
+            trendingRefreshIntervalRef.current = setInterval(() => {
+              showMessage("Background updates: refreshing trending chart...");
+              handleSearch(currentQuery, true);
+            }, 600000); // 10 minutes refresh rate
+          } else {
+            if (trendingRefreshIntervalRef.current) {
+              clearInterval(trendingRefreshIntervalRef.current);
+            }
+          }
+          return () => {
+            if (trendingRefreshIntervalRef.current) clearInterval(trendingRefreshIntervalRef.current);
+          };
+        }, [isTrendingMode, currentQuery]);
 
-        // IntersectionObserver — track active video
+        // Infinite Feed observer
         useEffect(() => {
           if (viewMode !== "feed" || videos.length === 0) return;
+          if (activeIndex >= videos.length - 2) {
+            loadMoreEndlessVideos();
+          }
+        }, [activeIndex, videos.length, viewMode, loadMoreEndlessVideos]);
+
+        // Dynamic Intersection Observer with rootMargin prefetching
+        useEffect(() => {
+          if (viewMode !== "feed" || videos.length === 0) return;
+
           const observer = new IntersectionObserver(
             (entries) => {
               entries.forEach((entry) => {
-                if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-                  const idx = Number(entry.target.id.replace("video-section-", ""));
-                  if (!Number.isNaN(idx)) setActiveIndex(idx);
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                  const idx = parseInt(entry.target.id.replace("video-section-", ""));
+                  if (!Number.isNaN(idx) && idx !== activeIndex) {
+                    setActiveIndex(idx);
+                  }
                 }
               });
             },
-            { threshold: [0.6] }
+            { threshold: [0.5], rootMargin: "150px 0px 150px 0px" }
           );
-          const t = setTimeout(() => {
-            videos.forEach((_, i) => {
-              const el = document.getElementById(`video-section-${i}`);
-              if (el) observer.observe(el);
+
+          const delayTimer = setTimeout(() => {
+            videos.forEach((_, idx) => {
+              const target = document.getElementById(`video-section-${idx}`);
+              if (target) observer.observe(target);
             });
-          }, 350);
-          return () => { observer.disconnect(); clearTimeout(t); };
+          }, 400);
+
+          return () => {
+            observer.disconnect();
+            clearTimeout(delayTimer);
+          };
         }, [videos, viewMode]);
 
-        // IntersectionObserver — sentinel element triggers fetchBatch for infinite scroll
+        // Mark as watched helper inside localstorage
+        const handleMarkAsWatched = useCallback((vidId) => {
+          if (watchHistory.includes(vidId)) return;
+          setWatchHistory((prev) => {
+            const next = [...prev, vidId];
+            localStorage.setItem("yt_watch_history", JSON.stringify(next));
+            return next;
+          });
+        }, [watchHistory]);
+
+        // Keyboard navigation setup bindings
         useEffect(() => {
-          if (viewMode !== "feed" || !hasMoreVideos || isUsingFallback) return;
-          const sentinel = sentinelRef.current;
-          if (!sentinel) return;
+          function handleKeyboard(e) {
+            const activeKey = e.key.toLowerCase();
+            if (document.activeElement.tagName === "INPUT") return;
 
-          const observer = new IntersectionObserver(
-            (entries) => {
-              entries.forEach((entry) => {
-                if (entry.isIntersecting) loadMoreVideos();
-              });
-            },
-            { threshold: 0.1 }
-          );
-          observer.observe(sentinel);
-          return () => observer.disconnect();
-        }, [videos.length, viewMode, hasMoreVideos, isUsingFallback, loadMoreVideos]);
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              scrollIndexTo("down");
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              scrollIndexTo("up");
+            } else if (activeKey === "m") {
+              handleMuteToggle();
+            } else if (activeKey === "l") {
+              handleLikeToggle(activeIndex);
+            } else if (activeKey === "c") {
+              setIsCommentsOpen(!isCommentsOpen);
+            } else if (activeKey === "g") {
+              setViewMode(v => v === "feed" ? "grid" : "feed");
+            } else if (e.key === "Escape") {
+              setIsCommentsOpen(false);
+              setIsShareOpen(false);
+              setIsHelpOpen(false);
+            }
+          }
+          window.addEventListener("keydown", handleKeyboard);
+          return () => window.removeEventListener("keydown", handleKeyboard);
+        }, [activeIndex, videos.length, isCommentsOpen]);
 
-        // -- Handlers --
+        // Action controls
         function handleLikeToggle(index) {
           setVideos((prev) => {
-            const clone    = [...prev];
-            const item     = clone[index];
-            if (!item) return clone;
-            const newLikes = item.liked ? Math.max(0, item.likes - 1) : item.likes + 1;
-            clone[index]   = { ...item, liked: !item.liked, likes: newLikes, likesLabel: formatMetric(newLikes) };
-            return clone;
+            const copy = [...prev];
+            const item = copy[index];
+            if (!item) return copy;
+            copy[index] = {
+              ...item,
+              liked: !item.liked,
+              likes: item.liked ? Math.max(0, item.likes - 1) : item.likes + 1,
+              likesLabel: formatMetric(item.liked ? Math.max(0, item.likes - 1) : item.likes + 1),
+            };
+            return copy;
           });
         }
 
         function handleMuteToggle() {
-          setIsMuted((v) => !v);
+          setIsMuted((prev) => !prev);
           setShowSoundPrompt(false);
         }
 
-        function handleGlobalInteraction() {
-          if (!showSoundPrompt) return;
-          setIsMuted(false);
-          setShowSoundPrompt(false);
-        }
+        function handleAddComment(vidId, text) {
+          const nowStr = Date.now();
+          // Safety: Anti-spam time lock (restrict postings faster than 2 seconds)
+          if (nowStr - lastCommentTimeRef.current < 2000) {
+            return false;
+          }
 
-        function handleShareClick(index) {
-          const video = videos[index];
-          if (!video) return;
-          const url = `https://www.youtube.com/watch?v=${video.id}`;
-          if (navigator.share) { navigator.share({ title: video.title, url }).catch(() => {}); return; }
-          navigator.clipboard.writeText(url).then(() => showToast("Reel link copied to clipboard"));
-        }
+          // Anti-duplicate protection checking
+          const currentList = allComments[vidId] || [];
+          const hasDuplicate = currentList.some(c => c.text.toLowerCase() === text.toLowerCase());
+          if (hasDuplicate) {
+            return false;
+          }
 
-        function scrollIndexTo(direction) {
-          const next = direction === "up" ? activeIndex - 1 : activeIndex + 1;
-          if (next < 0 || next >= videos.length) return;
-          const el = document.getElementById(`video-section-${next}`);
-          if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); setActiveIndex(next); }
-        }
+          lastCommentTimeRef.current = nowStr;
 
-        function handleAddComment(videoId, text) {
-          const newComment = { id: `comment-${Date.now()}`, videoId, username: "You", text, timestamp: "Just now", avatarColor: "bg-rose-500" };
-          setAllComments((prev) => ({ ...prev, [videoId]: [...(prev[videoId] || []), newComment] }));
-          setVideos((prev) =>
-            prev.map((v) =>
-              v.id === videoId
-                ? { ...v, commentsCount: v.commentsCount + 1, commentsLabel: formatMetric(v.commentsCount + 1) }
-                : v
+          const itemComment = {
+            id: `cmt-${nowStr}`,
+            videoId: vidId,
+            username: "Aether Cadet",
+            text: sanitizeString(text),
+            timestamp: "Transmitting now",
+            avatarColor: "bg-indigo-600"
+          };
+
+          setAllComments((prev) => ({
+            ...prev,
+            [vidId]: [...(prev[vidId] || []), itemComment]
+          }));
+
+          persistCustomComment(vidId, itemComment);
+
+          // Increment on visible views count label metric
+          setVideos((vList) =>
+            vList.map((itm) =>
+              itm.id === vidId
+                ? { ...itm, commentsCount: itm.commentsCount + 1, commentsLabel: formatMetric(itm.commentsCount + 1) }
+                : itm
             )
           );
+          return true;
         }
 
-        function handleSelectFromGrid(index) {
+        function scrollIndexTo(dir) {
+          const target = dir === "up" ? activeIndex - 1 : activeIndex + 1;
+          if (target < 0 || target >= videos.length) return;
+          
+          const element = document.getElementById(`video-section-${target}`);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+            setActiveIndex(target);
+          }
+        }
+
+        const handleSelectFromGrid = useCallback((idx) => {
           setViewMode("feed");
-          setActiveIndex(index);
+          setActiveIndex(idx);
           setTimeout(() => {
-            const el = document.getElementById(`video-section-${index}`);
-            if (el) el.scrollIntoView({ behavior: "auto", block: "start" });
-          }, 150);
-        }
+            const target = document.getElementById(`video-section-${idx}`);
+            if (target) {
+              target.scrollIntoView({ behavior: "auto", block: "start" });
+            }
+          }, 350);
+        }, []);
 
-        function handleApiKeyChange(val) {
-          apiKeyRef.current = val;
-          setApiKey(val);
-          if (val.trim()) setTimeout(() => handleSearch(currentQuery), 200);
-        }
-
-        const activeVideo       = videos[activeIndex];
+        const activeVideo = videos[activeIndex];
         const activeCommentList = activeVideo ? allComments[activeVideo.id] || [] : [];
+        const customCommentsTotalNum = useMemo(() => {
+          return Object.values(allComments).reduce((acc, list) => acc + list.length, 0);
+        }, [allComments]);
 
         return (
-          <div onClick={handleGlobalInteraction} className="relative w-full h-screen bg-[#050505] text-zinc-100 overflow-hidden font-sans select-none">
+          <div className="relative w-full h-screen bg-[#060608] text-zinc-100 overflow-hidden font-sans select-none">
+            {/* Ambient cyber points decoration grids */}
             <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-10" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
             <SearchHeader
               currentQuery={currentQuery}
-              onSearch={handleSearch}
+              onSearch={(query) => {
+                setIsTrendingMode(false);
+                handleSearch(query, false);
+              }}
               apiKey={apiKey}
-              onChangeApiKey={handleApiKeyChange}
+              onChangeApiKey={(value) => {
+                setApiKey(value);
+                setTimeout(() => handleSearch(currentQuery, false), 200);
+              }}
               isLoading={isLoading}
               isUsingFallback={isUsingFallback}
-              noKeyConfigured={noKeyConfigured}
+              viewMode={viewMode}
+              onViewModeChange={(mode) => setViewMode(mode)}
+              recentSearches={recentSearches}
+              onClearRecent={() => {
+                localStorage.removeItem("yt_recent_searches");
+                setRecentSearches([]);
+                showMessage("Search registries cleared");
+              }}
+              isTrendingMode={isTrendingMode}
+              onToggleTrending={() => {
+                const nextMode = !isTrendingMode;
+                setIsTrendingMode(nextMode);
+                if (nextMode) {
+                  handleSearch("Trending Chart", true);
+                } else {
+                  handleSearch(DEFAULT_SEARCH_QUERY, false);
+                }
+              }}
+              apiStats={apiStats}
             />
 
-            {viewMode === "feed" ? (
-              <div className="relative w-full h-screen pb-6">
-                <div
-                  ref={feedContainerRef}
-                  className="w-full h-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar"
-                  style={{ WebkitOverflowScrolling: "touch" }}
-                >
-                  {videos.map((video, index) => {
-                    const dist            = Math.abs(index - activeIndex);
-                    const shouldLoadEmbed = index === activeIndex ||
-                      (index > activeIndex && index <= activeIndex + NEARBY_RENDER_DISTANCE) ||
-                      dist <= 1;
-                    return (
-                      <VideoSection
-                        key={video.id + index}
-                        video={video}
-                        index={index}
-                        isActive={index === activeIndex}
-                        shouldLoadEmbed={shouldLoadEmbed}
-                        isMuted={isMuted}
-                        onTapMedia={handleMuteToggle}
-                      />
-                    );
-                  })}
-
-                  {/* Sentinel div — IntersectionObserver watches this to trigger fetchBatch */}
-                  {hasMoreVideos && !isUsingFallback && (
-                    <div
-                      ref={sentinelRef}
-                      className="w-full h-24 flex items-center justify-center bg-black snap-start"
+            {/* Preloaded search chips bar */}
+            {!isTrendingMode && (
+              <div className="fixed top-24 left-0 right-0 z-30 flex gap-2 overflow-x-auto px-4 sm:px-8 py-2 max-w-7xl mx-auto no-scrollbar pointer-events-auto">
+                {CATEGORY_CHIPS.map((chip) => {
+                  const isSelected = currentQuery.toLowerCase() === chip.query.toLowerCase();
+                  return (
+                    <button
+                      key={chip.id}
+                      onClick={() => handleSearch(chip.query, false)}
+                      className={`px-3 py-1.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider transition-all duration-300 pointer-events-auto shrink-0 select-none ${
+                        isSelected
+                          ? "bg-gradient-to-r from-indigo-500 to-purple-600 border border-indigo-400/50 text-white shadow-md scale-105"
+                          : "bg-black/45 border border-white/5 text-zinc-400 hover:text-white"
+                      }`}
                     >
-                      {isLoading && <Icon name="refresh" className="w-6 h-6 text-indigo-400 animate-spin" />}
-                    </div>
-                  )}
-                </div>
-
-                {/* Desktop prev/next */}
-                <div className="absolute left-6 top-1/2 -translate-y-1/2 z-30 hidden md:flex flex-col gap-4">
-                  <button
-                    onClick={() => scrollIndexTo("up")}
-                    disabled={activeIndex === 0}
-                    title="Previous Reel"
-                    className="w-12 h-12 rounded-xl bg-zinc-900/40 border border-white/5 text-zinc-400 hover:text-white hover:border-indigo-500/50 flex items-center justify-center cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <Icon name="chevronUp" className="w-5 h-5" />
-                  </button>
-                  <div className="text-center font-mono text-xs font-bold text-zinc-500 py-1">
-                    {activeIndex + 1} / {videos.length}
-                  </div>
-                  <button
-                    onClick={() => scrollIndexTo("down")}
-                    disabled={activeIndex === videos.length - 1}
-                    title="Next Reel"
-                    className="w-12 h-12 rounded-xl bg-zinc-900/40 border border-white/5 text-zinc-400 hover:text-white hover:border-indigo-500/50 flex items-center justify-center cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <Icon name="chevronDown" className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {activeVideo && (
-                  <Sidebar
-                    video={activeVideo}
-                    index={activeIndex}
-                    onLikeToggle={() => handleLikeToggle(activeIndex)}
-                    onOpenComments={() => setIsCommentsOpen(true)}
-                    onShare={() => handleShareClick(activeIndex)}
-                    isMuted={isMuted}
-                    onMuteToggle={handleMuteToggle}
-                    viewMode={viewMode}
-                    onViewModeToggle={() => setViewMode("grid")}
-                  />
-                )}
+                      {chip.label}
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              <GridExplorer
-                videos={videos}
-                onSelectVideo={handleSelectFromGrid}
-                currentQuery={currentQuery}
-                onSwitchToFeed={() => setViewMode("feed")}
-              />
             )}
 
+            {/* Screen layout containers */}
+            <div className="relative w-full h-full">
+              {viewMode === "feed" ? (
+                <div
+                  className={`absolute inset-0 w-full h-full pb-6 transition-all duration-500 ease-in-out transform ${
+                    viewMode === "feed" ? "opacity-100 scale-100 translate-x-0 pointer-events-auto" : "opacity-0 scale-95 translate-x-[-20px] pointer-events-none"
+                  }`}
+                >
+                  <div
+                    ref={feedContainerRef}
+                    className="w-full h-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar"
+                    style={{ WebkitOverflowScrolling: "touch" }}
+                  >
+                    {videos.map((video, idx) => {
+                      const distanceFromActive = Math.abs(idx - activeIndex);
+                      // Smart Embed Management: Keep active, next 2, back 1
+                      const shouldLoadEmbed = idx === activeIndex ||
+                        (idx > activeIndex && idx <= activeIndex + 2) ||
+                        distanceFromActive <= 1;
+
+                      return (
+                        <VideoSection
+                          key={video.id + idx}
+                          video={video}
+                          index={idx}
+                          isActive={idx === activeIndex}
+                          shouldLoadEmbed={shouldLoadEmbed}
+                          isMuted={isMuted}
+                          onTapMedia={handleMuteToggle}
+                          historyCheck={watchHistory.includes(video.id)}
+                          onMarkAsWatched={handleMarkAsWatched}
+                        />
+                      );
+                    })}
+                    {isLoading && videos.length > 0 && (
+                      <div className="w-full h-24 flex items-center justify-center bg-black snap-start">
+                        <Icon name="refresh" className="w-5 h-5 text-indigo-400 animate-spin" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Desktop scroll navigation control assistance side rails */}
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 z-30 hidden md:flex flex-col gap-4">
+                    <button
+                      onClick={() => scrollIndexTo("up")}
+                      disabled={activeIndex === 0}
+                      className="w-11 h-11 rounded-full bg-zinc-950/60 border border-white/5 text-zinc-400 hover:text-white hover:border-indigo-500 flex items-center justify-center cursor-pointer transition-all shadow-md active:scale-95 disabled:opacity-25"
+                    >
+                      <Icon name="chevronUp" className="w-4 h-4" />
+                    </button>
+                    <div className="text-center font-mono text-[9px] font-bold tracking-widest text-zinc-500 select-none">
+                      {activeIndex + 1} / {videos.length}
+                    </div>
+                    <button
+                      onClick={() => scrollIndexTo("down")}
+                      disabled={activeIndex === videos.length - 1}
+                      className="w-11 h-11 rounded-full bg-zinc-950/60 border border-white/5 text-zinc-400 hover:text-white hover:border-indigo-500 flex items-center justify-center cursor-pointer transition-all shadow-md active:scale-95 disabled:opacity-25"
+                    >
+                      <Icon name="chevronDown" className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {activeVideo && (
+                    <Sidebar
+                      video={activeVideo}
+                      index={activeIndex}
+                      onLikeToggle={() => handleLikeToggle(activeIndex)}
+                      onOpenComments={() => setIsCommentsOpen(true)}
+                      onShare={() => setIsShareOpen(true)}
+                      isMuted={isMuted}
+                      onMuteToggle={handleMuteToggle}
+                      viewMode={viewMode}
+                      onViewModeToggle={() => setViewMode("grid")}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div
+                  className={`absolute inset-0 w-full h-full overflow-y-auto no-scrollbar transition-all duration-500 ease-in-out transform ${
+                    viewMode === "grid" ? "opacity-100 scale-100 translate-x-0 pointer-events-auto" : "opacity-0 scale-105 translate-x-[20px] pointer-events-none"
+                  }`}
+                >
+                  <GridExplorer
+                    videos={videos}
+                    onSelectVideo={handleSelectFromGrid}
+                    currentQuery={currentQuery}
+                    onLoadMore={loadMoreEndlessVideos}
+                    hasMore={hasMoreVideos}
+                    isLoading={isLoading}
+                    onSwitchToFeed={() => setViewMode("feed")}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Help / Debug button controls at bottom left margins */}
+            <div className="fixed bottom-10 left-4 z-40 hidden sm:flex items-center gap-2">
+              <button
+                onClick={() => setIsHelpOpen(!isHelpOpen)}
+                title="Open system shortcuts binding panel"
+                className="w-9 h-9 rounded-full bg-zinc-950/70 border border-white/5 text-zinc-400 hover:text-indigo-400 transition-colors flex items-center justify-center backdrop-blur-md"
+              >
+                <Icon name="help" className="w-4.5 h-4.5" />
+              </button>
+              <button
+                onClick={() => setIsDebugOpen(!isDebugOpen)}
+                title="Toggle debug diagnostics terminal"
+                className="w-9 h-9 rounded-full bg-zinc-950/70 border border-white/5 text-zinc-400 hover:text-indigo-400 transition-colors flex items-center justify-center backdrop-blur-md"
+              >
+                <Icon name="analytics" className="w-4.5 h-4.5" />
+              </button>
+            </div>
+
+            {/* Overlays list */}
             {activeVideo && (
               <CommentPanel
                 isOpen={isCommentsOpen}
@@ -1003,33 +2143,57 @@
               />
             )}
 
+            {activeVideo && (
+              <ShareModal
+                isOpen={isShareOpen}
+                onClose={() => setIsShareOpen(false)}
+                video={activeVideo}
+                onShowToast={showMessage}
+              />
+            )}
+
+            <HelpOverlay isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+
+            {isDebugOpen && (
+              <DebugPanel
+                videosCount={videos.length}
+                activeIndex={activeIndex}
+                currentQuery={currentQuery}
+                viewMode={viewMode}
+                isUsingFallback={isUsingFallback}
+                isMuted={isMuted}
+                customCommentsCount={customCommentsTotalNum}
+                onClose={() => setIsDebugOpen(false)}
+              />
+            )}
+
             {showSoundPrompt && (
               <div
                 onClick={handleMuteToggle}
-                className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs shadow-xl shadow-indigo-500/20 backdrop-blur-md flex items-center gap-2 border border-indigo-400/20 cursor-pointer animate-bounce group"
+                className="fixed bottom-12 left-1/2 -translate-x-1/2 z-35 px-6 py-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs shadow-xl shadow-indigo-500/25 backdrop-blur-md flex items-center gap-2 border border-indigo-400/20 cursor-pointer animate-bounce select-none"
               >
-                <Icon name="volume" className="w-4 h-4 animate-pulse group-hover:scale-110 transition-transform text-teal-300" />
-                <span className="tracking-widest font-mono text-[10px] uppercase">Activate Audio Node</span>
+                <Icon name="volume" className="w-4 h-4 animate-pulse text-white" />
+                <span className="tracking-widest font-mono text-[9px] uppercase font-black">ACTIVATE AUDIO DECK</span>
               </div>
             )}
 
-            <footer className="fixed bottom-0 left-0 right-0 h-6 bg-indigo-600 text-white flex items-center overflow-hidden z-40 select-none pointer-events-none">
-              <div className="flex gap-16 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.25em] animate-marquee">
-                <span>Critical Update: Neural Core v2.4 initialized...</span>
-                <span>System Status: Optimal...</span>
-                <span>All visual nodes green...</span>
-                <span>Latency: 12ms / Stable...</span>
-                <span>Active curations synced...</span>
-                <span>Critical Update: Neural Core v2.4 initialized...</span>
-                <span>System Status: Optimal...</span>
-                <span>Ready for command.</span>
+            {/* Cyber marquee system ticker footer */}
+            <footer className="fixed bottom-0 left-0 right-0 h-6 bg-[#09090C] border-t border-white/5 text-zinc-500 flex items-center overflow-hidden z-40 select-none pointer-events-none">
+              <div className="flex gap-20 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.25em] animate-marquee font-mono">
+                <span>System Node active • Status: Optimal</span>
+                <span>Latency: Curations synchronized</span>
+                <span>Demo mode fallbacks operational</span>
+                <span>All visual signals stabilized</span>
+                <span>System Node active • Status: Optimal</span>
+                <span>Latency: Curations synchronized</span>
               </div>
             </footer>
 
+            {/* Custom toast notices overlay */}
             {toastMessage && (
-              <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl bg-zinc-900/95 text-zinc-100 border border-white/10 shadow-2xl flex items-center gap-2 font-semibold text-xs tracking-wider">
+              <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl bg-[#09090C] border border-white/10 shadow-2xl flex items-center gap-2 font-semibold text-xs tracking-wider animate-in fade-in slide-in-from-top-4 duration-300">
                 <Icon name="sparkles" className="w-3.5 h-3.5 text-indigo-400" />
-                <span>{toastMessage}</span>
+                <span className="text-zinc-200 uppercase tracking-widest font-mono text-[9px]">{toastMessage}</span>
               </div>
             )}
           </div>
