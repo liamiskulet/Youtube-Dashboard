@@ -76,7 +76,7 @@
 
       const DEFAULT_SEARCH_QUERY = "anime edits";
       const DEFAULT_YOUTUBE_API_KEY = "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc";
-      const SEARCH_BATCH_SIZE = 25;
+      const SEARCH_BATCH_SIZE = 5;
       const SEARCH_FANOUT = 8;
       const NEARBY_RENDER_DISTANCE = 3;
 
@@ -798,7 +798,11 @@
         const [viewMode, setViewMode] = useState("feed");
         const [isLoading, setIsLoading] = useState(false);
         const [isUsingFallback, setIsUsingFallback] = useState(false);
-        const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
+
+const [nextPageToken, setNextPageToken] = useState("");
+const [hasMoreVideos, setHasMoreVideos] = useState(true);
+
+const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
         const [isCommentsOpen, setIsCommentsOpen] = useState(false);
         const [toastMessage, setToastMessage] = useState(null);
 
