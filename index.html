@@ -283,19 +283,22 @@
       }
 
       function buildSearchUrl(query, apiKey, pageToken = "") {
-        const params = new URLSearchParams({
-          part: "snippet",
-          type: "video",
-          videoDuration: "short",
-          videoEmbeddable: "true",
-          maxResults: String(SEARCH_BATCH_SIZE),
-          q: `${query} shorts`,
-          key: apiKey,
-        });
+  const params = new URLSearchParams({
+    part: "snippet",
+    type: "video",
+    videoDuration: "short",
+    videoEmbeddable: "true",
+    maxResults: "5",
+    q: `${query} shorts`,
+    key: apiKey,
+  });
 
-        if (pageToken) params.set("pageToken", pageToken);
-        return `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
-      }
+  if (pageToken) {
+    params.set("pageToken", pageToken);
+  }
+
+  return `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
+}
 
       function formatApiVideo(item) {
         const videoId = item?.id?.videoId;
@@ -806,8 +809,12 @@ const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
         const [isCommentsOpen, setIsCommentsOpen] = useState(false);
         const [toastMessage, setToastMessage] = useState(null);
 
-        const toastTimeoutRef = useRef(null);
         const feedContainerRef = useRef(null);
+
+const loadMoreObserverRef = useRef(null);
+const lastVideoRef = useRef(null);
+
+const loadedVideoIdsRef = useRef(new Set());
         const loadedVideoIdsRef = useRef(new Set());
         const requestGenerationRef = useRef(0);
         const queryCursorRef = useRef(0);
@@ -825,6 +832,52 @@ const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
         }
 
         async function fetchDiscoveryBatch(baseQuery, options = {}) {
+  const {
+    reset = false,
+    generation = requestGenerationRef.current,
+  } = options;
+
+  if (reset) {
+    loadedVideoIdsRef.current = new Set();
+    setNextPageToken("");
+    setHasMoreVideos(true);
+  }
+
+  const response = await fetch(
+    buildSearchUrl(
+      baseQuery,
+      apiKeyRef.current,
+      reset ? "" : nextPageToken
+    )
+  );
+
+  const data = await response.json();
+
+  if (generation !== requestGenerationRef.current) {
+    return [];
+  }
+
+  if (data.error) {
+    throw new Error(data.error.message);
+  }
+
+  setNextPageToken(data.nextPageToken || "");
+  setHasMoreVideos(Boolean(data.nextPageToken));
+
+  const freshVideos = [];
+
+  for (const item of data.items || []) {
+    const formatted = formatApiVideo(item);
+
+    if (!formatted) continue;
+    if (loadedVideoIdsRef.current.has(formatted.id)) continue;
+
+    loadedVideoIdsRef.current.add(formatted.id);
+    freshVideos.push(formatted);
+  }
+
+  return freshVideos;
+}
           const { reset = false, generation = requestGenerationRef.current } = options;
           const relatedQueries = generateRelatedQueries(baseQuery);
           const startOffset = reset ? 0 : queryCursorRef.current;
@@ -908,6 +961,42 @@ const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
         }
 
         async function loadMoreEndlessVideos() {
+  if (
+    isLoading ||
+    !hasMoreVideos ||
+    videos.length === 0
+  ) {
+    return;
+  }
+
+  const generation = requestGenerationRef.current;
+
+  setIsLoading(true);
+
+  try {
+    const moreVideos = await fetchDiscoveryBatch(
+      currentQuery,
+      { generation }
+    );
+
+    if (generation !== requestGenerationRef.current) {
+      return;
+    }
+
+    if (moreVideos.length) {
+      setVideos((previous) => [
+        ...previous,
+        ...moreVideos,
+      ]);
+    }
+  } catch (error) {
+    console.error(error);
+  } finally {
+    if (generation === requestGenerationRef.current) {
+      setIsLoading(false);
+    }
+  }
+}
           if (isLoading || videos.length === 0) return;
 
           const generation = requestGenerationRef.current;
@@ -934,10 +1023,7 @@ const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
         }, []);
 
         useEffect(() => {
-          if (videos.length > 0 && activeIndex >= videos.length - 6) {
-            loadMoreEndlessVideos();
-          }
-        }, [activeIndex, videos.length]);
+  if (viewMode !== "feed" || videos.length === 0) return;
 
         useEffect(() => {
           if (viewMode !== "feed" || videos.length === 0) return;
