@@ -1,1837 +1,1024 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="An ultra-modern, cinematic vertical scrolling shorts feed inspired by TikTok and YouTube Shorts, featuring full-screen HD playback, interactive sidebars, comments panels, and dynamic animations."
+    />
+    <title>Premium Shorts Feed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            animation: {
+              marquee: "marquee 30s linear infinite",
+            },
+            keyframes: {
+              marquee: {
+                from: { transform: "translateX(0)" },
+                to: { transform: "translateX(-50%)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html,
+      body {
+        background: #050505;
+        color: #f4f4f5;
+        overscroll-behavior-y: none;
+      }
 
-<meta charset="UTF-8" />
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-/>
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
 
-<title>Premium Personalized Shorts Feed</title>
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 16px);
+      }
 
-<link
-    rel="preconnect"
-    href="https://fonts.googleapis.com"
-/>
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 16px);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
 
-<link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin
-/>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-<link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet"
-/>
+    <script type="text/babel">
+      /**
+       * @license
+       * SPDX-License-Identifier: Apache-2.0
+       *
+       * Single-file build of the original Vite/React app. Keep the sections below
+       * split by responsibility so this remains readable without the src folder.
+       */
 
-<style>
+      const { useEffect, useRef, useState } = React;
 
-/* ==========================================
-    RESET
-========================================== */
+      // -----------------------------------------------------------------------
+      // Constants
+      // -----------------------------------------------------------------------
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
+      const DEFAULT_YOUTUBE_API_KEY = "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc";
 
-html,
-body{
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:#000;
+      const FALLBACK_VIDEOS = [
+        {
+          id: "gS-K01j1N6o",
+          title: "Vibe check under Tokyo neon rain lights",
+          channel: "TokyoVibeZ",
+          likes: 4210,
+          commentsCount: 22,
+          liked: false,
+          shares: 890,
+          isFallback: true,
+        },
+        {
+          id: "7zAtL-59vQ4",
+          title: "Exploring deep valleys POV - Swiss glider drone",
+          channel: "SkyDrones",
+          likes: 8320,
+          commentsCount: 65,
+          liked: false,
+          shares: 1240,
+          isFallback: true,
+        },
+        {
+          id: "C3-6D-Qy7k8",
+          title: "Cozy Kyoto golden walk in sunset alleys",
+          channel: "Wanderer",
+          likes: 3890,
+          commentsCount: 19,
+          liked: false,
+          shares: 412,
+          isFallback: true,
+        },
+        {
+          id: "M3_o4N-SveY",
+          title: "Quiet rustic library window rain storm sounds",
+          channel: "ChillWaves",
+          likes: 2150,
+          commentsCount: 14,
+          liked: false,
+          shares: 198,
+          isFallback: true,
+        },
+      ];
 
-    font-family:
-        "Inter",
-        sans-serif;
+      const RANDOM_VIDEO_POOL = [
+        { id: "gS-K01j1N6o", title: "Midnight cruise through neon city rain", channel: "NeoVibe" },
+        { id: "7zAtL-59vQ4", title: "Extreme canyon flying close call drone POV", channel: "SpeedFlyer" },
+        { id: "C3-6D-Qy7k8", title: "Secret gardens of old Tokyo sunset walk", channel: "Wanderlust" },
+        { id: "M3_o4N-SveY", title: "Cozy fireplace cabin desk setup study", channel: "WarmDen" },
+        { id: "YV9NCOt6T0w", title: "Hypnotic deep ocean jellyfish dance loop", channel: "SubAqua" },
+        { id: "f7v_cTirh_E", title: "Satisfying pristine sand carving ASMR", channel: "CalmCraft" },
+        { id: "g6N3R85b7Ew", title: "Custom solid brass mechanical keyboard build", channel: "KeebClub" },
+        { id: "dQw4w9WgXcQ", title: "Never gonna give you up - 4K remaster", channel: "RetroSounds" },
+        { id: "3S9v_Z-cZfQ", title: "First person POV mountain biking steep trail", channel: "GravelHead" },
+        { id: "88k-S7Y-b3U", title: "Amazing neon skatepark night session tricks", channel: "OlliePro" },
+        { id: "7T8zXf8qD1g", title: "Red panda discovering snow for the first time", channel: "WildLife" },
+        { id: "0s2A7CPhm_M", title: "Restoring a 1920s rusty vintage pocket watch", channel: "TimeCraft" },
+        { id: "6zVv8CPrg8Y", title: "Insane sunset rooftop skateboarding line", channel: "FlipTrips" },
+        { id: "8Cg5D_8i_t0", title: "Master potter throwing clay on spinning wheel", channel: "ClayCraft" },
+        { id: "J_3d-4E38vM", title: "Earth revolving from the International Space Station", channel: "AstroEye" },
+        { id: "O4-bC0v222U", title: "Pacman arcade world record speedrun gameplay", channel: "8BitRetro" },
+        { id: "S6fC9uJ2Ceg", title: "Crispy golden Japanese street food omelet setup", channel: "TastyBites" },
+        { id: "Sg46I-z2p5g", title: "Flying taxi concept over future city grid", channel: "Futurism" },
+      ];
 
-    color:white;
+      const INITIAL_COMMENTS = {
+        "gS-K01j1N6o": [
+          { id: "c1", videoId: "gS-K01j1N6o", username: "cyber_junkie", text: "The rain reflection on the concrete is literally spectacular!", timestamp: "2 hours ago", avatarColor: "bg-purple-500" },
+          { id: "c2", videoId: "gS-K01j1N6o", username: "lofi_girl_fan", text: "Listening to synthwave and watching this on loop is perfect therapy.", timestamp: "5 hours ago", avatarColor: "bg-blue-500" },
+          { id: "c3", videoId: "gS-K01j1N6o", username: "tokyo_dreamer", text: "Take me back to Shinjuku already. Beautiful capture.", timestamp: "1 day ago", avatarColor: "bg-pink-500" },
+        ],
+        "C3-6D-Qy7k8": [
+          { id: "c6", videoId: "C3-6D-Qy7k8", username: "sakura_petal", text: "Kyoto during sunset has the most golden warm glow you could imagine.", timestamp: "1 hour ago", avatarColor: "bg-rose-400" },
+          { id: "c7", videoId: "C3-6D-Qy7k8", username: "wanderlust_guy", text: "Did you use a gimbal for this? It feels like flying.", timestamp: "3 hours ago", avatarColor: "bg-indigo-500" },
+          { id: "c8", videoId: "C3-6D-Qy7k8", username: "editor_pro", text: "Super clean color grading. What LUT is this?", timestamp: "12 hours ago", avatarColor: "bg-teal-500" },
+        ],
+        "7zAtL-59vQ4": [
+          { id: "c9", videoId: "7zAtL-59vQ4", username: "nature_lover", text: "Switzerland is a cheat code. Unbelievably photogenic.", timestamp: "10 mins ago", avatarColor: "bg-green-500" },
+          { id: "c10", videoId: "7zAtL-59vQ4", username: "drone_force", text: "The signal on that drone must have been wild. Incredible height.", timestamp: "1 hour ago", avatarColor: "bg-orange-500" },
+        ],
+        "M3_o4N-SveY": [
+          { id: "c11", videoId: "M3_o4N-SveY", username: "caffeine_fix", text: "I can smell the roasted espresso beans from here.", timestamp: "3 hours ago", avatarColor: "bg-amber-600" },
+          { id: "c12", videoId: "M3_o4N-SveY", username: "cozy_cozy", text: "Perfect study motivation. The mug steam looks so relaxing.", timestamp: "8 hours ago", avatarColor: "bg-yellow-600" },
+        ],
+      };
 
-    -webkit-tap-highlight-color:
-        transparent;
-}
+      // -----------------------------------------------------------------------
+      // Icons
+      // -----------------------------------------------------------------------
 
-/* ==========================================
-    ROOT
-========================================== */
+      const ICONS = {
+        alert: ["M10.29 3.86 1.82 14a2 2 0 0 0 1.93 2.5h15.92a2 2 0 0 0 1.93-2.5l-1.82-14a2 2 0 0 0-3.86 0Z", "M12 9v4", "M12 17h.01"],
+        check: ["M20 6 9 17l-5-5"],
+        chevronDown: ["m6 9 6 6 6-6"],
+        chevronUp: ["m18 15-6-6-6 6"],
+        grid: ["M3 3h7v7H3z", "M14 3h7v7h-7z", "M14 14h7v7h-7z", "M3 14h7v7H3z"],
+        heart: ["M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"],
+        image: ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M3 11V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6", "m21 15-5-5L5 21", "m14 14-3-3-8 8"],
+        key: ["m15.5 7.5 2 2", "m11 11 4.5-4.5a5 5 0 1 1 2 2L13 13l-3 3H7v3H4v-3.5z"],
+        message: ["M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"],
+        pause: ["M6 4h4v16H6z", "M14 4h4v16h-4z"],
+        play: ["M5 5a2 2 0 0 1 3-1.73l11 7a2 2 0 0 1 0 3.46l-11 7A2 2 0 0 1 5 19z"],
+        refresh: ["M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", "M16 16h5v5"],
+        scroll: ["M8 21h8", "M12 17v4", "M7 4h10a2 2 0 0 1 2 2v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V6a2 2 0 0 1 2-2z"],
+        search: ["m21 21-4.34-4.34", "M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"],
+        send: ["m22 2-7 20-4-9-9-4Z", "M22 2 11 13"],
+        share: ["M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7", "M16 6l-4-4-4 4", "M12 2v13"],
+        sparkles: ["M9.94 15.5 8.5 21l-1.44-5.5L1.5 14l5.56-1.5L8.5 7l1.44 5.5L15.5 14z", "M19 8l-.8 3-3.2.8 3.2.8.8 3 .8-3 3.2-.8-3.2-.8z", "M19 2l-.5 2-2 .5 2 .5.5 2 .5-2 2-.5-2-.5z"],
+        volume: ["M11 5 6 9H2v6h4l5 4z", "M15.54 8.46a5 5 0 0 1 0 7.07", "M19.07 4.93a10 10 0 0 1 0 14.14"],
+        volumeX: ["M11 5 6 9H2v6h4l5 4z", "m23 9-6 6", "m17 9 6 6"],
+        x: ["M18 6 6 18", "M6 6l12 12"],
+      };
 
-:root{
-
-    --glass-bg:
-        rgba(0,0,0,.38);
-
-    --glass-border:
-        rgba(255,255,255,.10);
-
-    --glass-shadow:
-        0 10px 40px rgba(0,0,0,.45);
-
-}
-
-/* ==========================================
-    APP
-========================================== */
-
-#app{
-    position:relative;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:#000;
-}
-
-/* ==========================================
-    FEED
-========================================== */
-
-#feed{
-    width:100%;
-    height:100vh;
-
-    overflow-y:scroll;
-
-    scroll-snap-type:y mandatory;
-
-    scroll-behavior:smooth;
-
-    overscroll-behavior-y:contain;
-
-    -webkit-overflow-scrolling:touch;
-}
-
-.video-section{
-    position:relative;
-
-    width:100%;
-    height:100vh;
-
-    overflow:hidden;
-
-    background:#000;
-
-    scroll-snap-align:start;
-}
-
-/* ==========================================
-    PLAYER
-========================================== */
-
-.player-shell{
-    position:absolute;
-    inset:0;
-    overflow:hidden;
-    background:#000;
-}
-
-.player-shell iframe{
-    position:absolute;
-
-    top:50%;
-    left:50%;
-
-    width:56.25vh;
-    height:100vh;
-
-    transform:
-        translate(-50%,-50%);
-
-    border:none;
-
-    pointer-events:none;
-}
-
-@media(max-aspect-ratio:9/16){
-
-    .player-shell iframe{
-
-        width:100vw;
-        height:177.78vw;
-
-    }
-
-}
-
-/* ==========================================
-    GLASS
-========================================== */
-
-.glass{
-    background:
-        var(--glass-bg);
-
-    border:
-        1px solid var(--glass-border);
-
-    backdrop-filter:
-        blur(16px);
-
-    -webkit-backdrop-filter:
-        blur(16px);
-
-    box-shadow:
-        var(--glass-shadow);
-}
-
-/* ==========================================
-    SEARCH HEADER
-========================================== */
-
-.search-header{
-    position:fixed;
-
-    top:0;
-    left:0;
-    right:0;
-
-    z-index:1000;
-
-    padding:
-        env(safe-area-inset-top)
-        14px
-        14px
-        14px;
-
-    background:
-        linear-gradient(
-            to bottom,
-            rgba(0,0,0,.55),
-            transparent
+      function Icon({ name, className = "w-5 h-5", fill = "none" }) {
+        return (
+          <svg className={className} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {(ICONS[name] || []).map((d) => <path key={d} d={d} />)}
+          </svg>
         );
-
-    pointer-events:none;
-}
-
-.search-shell{
-    width:100%;
-    max-width:700px;
-
-    margin:0 auto;
-
-    display:flex;
-    align-items:center;
-    gap:12px;
-
-    padding:12px;
-
-    border-radius:26px;
-
-    pointer-events:auto;
-}
-
-.search-input{
-    flex:1;
-
-    border:none;
-    outline:none;
-
-    background:transparent;
-
-    color:white;
-
-    font-size:15px;
-    font-weight:500;
-}
-
-.search-input::placeholder{
-    color:
-        rgba(255,255,255,.65);
-}
-
-.search-btn{
-    width:46px;
-    height:46px;
-
-    border:none;
-
-    border-radius:50%;
-
-    cursor:pointer;
-
-    font-size:18px;
-
-    color:white;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    transition:
-        transform .15s ease;
-}
-
-.search-btn:hover{
-    transform:scale(1.06);
-}
-
-.search-btn:active{
-    transform:scale(.92);
-}
-
-/* ==========================================
-    SEARCH HISTORY
-========================================== */
-
-.search-history{
-    position:fixed;
-
-    top:92px;
-    left:50%;
-
-    transform:translateX(-50%);
-
-    width:calc(100% - 28px);
-    max-width:700px;
-
-    z-index:999;
-
-    display:flex;
-    flex-wrap:wrap;
-
-    gap:10px;
-
-    padding:12px;
-
-    border-radius:22px;
-}
-
-.history-chip{
-    border:none;
-
-    cursor:pointer;
-
-    color:white;
-
-    font-size:13px;
-    font-weight:600;
-
-    padding:
-        10px 14px;
-
-    border-radius:999px;
-
-    transition:
-        transform .15s ease,
-        background .15s ease;
-}
-
-.history-chip:hover{
-    transform:scale(1.04);
-}
-
-/* ==========================================
-    META
-========================================== */
-
-.meta{
-    position:absolute;
-
-    left:16px;
-    bottom:95px;
-
-    width:
-        calc(100% - 120px);
-
-    z-index:5;
-
-    padding:16px;
-
-    border-radius:24px;
-}
-
-.channel{
-    font-size:14px;
-    font-weight:700;
-
-    margin-bottom:10px;
-
-    opacity:.9;
-}
-
-.title{
-    font-size:18px;
-    line-height:1.5;
-    font-weight:800;
-
-    display:-webkit-box;
-
-    -webkit-line-clamp:2;
-    -webkit-box-orient:vertical;
-
-    overflow:hidden;
-}
-
-/* ==========================================
-    SIDEBAR
-========================================== */
-
-.sidebar{
-    position:absolute;
-
-    right:12px;
-    bottom:95px;
-
-    z-index:50;
-
-    display:flex;
-    flex-direction:column;
-
-    gap:18px;
-}
-
-.action{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:7px;
-}
-
-.action-btn{
-    width:58px;
-    height:58px;
-
-    border-radius:50%;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    font-size:24px;
-
-    cursor:pointer;
-
-    transition:
-        transform .15s ease;
-}
-
-.action-btn:active{
-    transform:scale(.88);
-}
-
-.action-label{
-    font-size:12px;
-    font-weight:700;
-}
-
-/* ==========================================
-    GRADIENTS
-========================================== */
-
-.top-gradient{
-    position:absolute;
-
-    top:0;
-    left:0;
-    right:0;
-
-    height:180px;
-
-    z-index:2;
-
-    background:
-        linear-gradient(
-            to bottom,
-            rgba(0,0,0,.75),
-            transparent
+      }
+
+      // -----------------------------------------------------------------------
+      // Components
+      // -----------------------------------------------------------------------
+
+      function SearchHeader({ currentQuery, onSearch, apiKey, onChangeApiKey, isLoading, isUsingFallback }) {
+        const [inputValue, setInputValue] = useState("");
+        const [showKeyPanel, setShowKeyPanel] = useState(false);
+        const [tempKey, setTempKey] = useState(apiKey);
+
+        function handleSubmit(event) {
+          event.preventDefault();
+          if (inputValue.trim()) onSearch(inputValue.trim());
+        }
+
+        function saveApiKey() {
+          onChangeApiKey(tempKey.trim());
+          setShowKeyPanel(false);
+        }
+
+        return (
+          <div className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/50 to-transparent pt-safe pb-4 px-4 pointer-events-none">
+            <div className="max-w-md mx-auto pointer-events-auto">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white font-bold text-xs tracking-wider uppercase select-none">
+                  <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center shadow-[0_0_10px_rgba(99,102,241,0.6)]">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                  </div>
+                  <span className="tracking-widest">AETHER.REELS</span>
+                </div>
+
+                <form onSubmit={handleSubmit} className="flex-1 relative flex items-center">
+                  <div className="w-full relative">
+                    <input
+                      id="search-input-field"
+                      type="text"
+                      placeholder="Query system files..."
+                      value={inputValue}
+                      onChange={(event) => setInputValue(event.target.value)}
+                      className="w-full bg-zinc-900/40 backdrop-blur-xl border border-white/10 focus:border-indigo-500 text-white text-xs font-semibold rounded-full py-2 pl-9 pr-9 outline-none transition-all focus:ring-1 focus:ring-indigo-500/30"
+                    />
+                    <Icon name="search" className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    {isLoading && <Icon name="refresh" className="w-3.5 h-3.5 text-indigo-400 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />}
+                  </div>
+                </form>
+
+                <button
+                  id="api-key-toggle-btn"
+                  onClick={() => {
+                    setTempKey(apiKey);
+                    setShowKeyPanel(!showKeyPanel);
+                  }}
+                  title="Configure API Credentials"
+                  className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all ${
+                    isUsingFallback
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20"
+                      : "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20"
+                  }`}
+                >
+                  <Icon name="key" className="w-4 h-4" />
+                </button>
+              </div>
+
+              {showKeyPanel && (
+                <div className="mt-3 p-4 rounded-2xl bg-neutral-900/95 backdrop-blur-2xl border border-white/15 shadow-2xl">
+                  <h4 className="text-white text-xs font-bold tracking-wider uppercase mb-1 flex items-center gap-2">
+                    <Icon name="key" className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>YouTube API Settings</span>
+                  </h4>
+                  <p className="text-[11px] text-zinc-400 mb-3 leading-relaxed">
+                    If search queries respond with quotas exceeded or are empty, input your Google Developer API key or enjoy the scenic curations instead.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      id="api-key-input-field"
+                      type="password"
+                      placeholder="Paste API key here..."
+                      value={tempKey}
+                      onChange={(event) => setTempKey(event.target.value)}
+                      className="flex-1 bg-white/5 border border-white/10 text-white text-xs rounded-lg px-3 py-2 outline-none focus:border-indigo-500/50"
+                    />
+                    <button
+                      id="api-key-save-btn"
+                      onClick={saveApiKey}
+                      className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-white text-xs px-3 py-2 rounded-lg font-bold transition-all cursor-pointer shadow-[0_0_10px_rgba(99,102,241,0.3)]"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  {isUsingFallback ? (
+                    <div className="mt-2 text-[10px] text-amber-500">Currently running on failsafe local scenic stream</div>
+                  ) : (
+                    <div className="mt-2 text-[10px] text-emerald-400 flex items-center gap-1">
+                      <Icon name="check" className="w-3 h-3" />
+                      <span>YouTube Cloud API connectivity ready</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         );
-}
+      }
 
-.bottom-gradient{
-    position:absolute;
+      function VideoSection({ video, index, isActive, isMuted, onTapMedia }) {
+        const [isPlaying, setIsPlaying] = useState(isActive);
+        const [feedbackIcon, setFeedbackIcon] = useState(null);
+        const [isBuffering, setIsBuffering] = useState(true);
 
-    left:0;
-    right:0;
-    bottom:0;
+        useEffect(() => {
+          setIsPlaying(isActive);
+          if (!isActive) return;
+          setIsBuffering(true);
+          const timer = setTimeout(() => setIsBuffering(false), 950);
+          return () => clearTimeout(timer);
+        }, [isActive]);
 
-    height:48%;
+        function handleMediaTap() {
+          const nextState = !isPlaying;
+          setIsPlaying(nextState);
+          setFeedbackIcon(nextState ? "play" : "pause");
+          onTapMedia();
+          setTimeout(() => setFeedbackIcon(null), 550);
+        }
 
-    z-index:2;
+        const ytQuery = `autoplay=${isActive && isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${video.id}&enablejsapi=1&playsinline=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1`;
+        const embedUrl = `https://www.youtube.com/embed/${video.id}?${ytQuery}`;
 
-    background:
-        linear-gradient(
-            to top,
-            rgba(0,0,0,.95),
-            rgba(0,0,0,.6),
-            transparent
+        return (
+          <div id={`video-section-${index}`} className="relative w-full h-screen bg-black overflow-hidden flex items-center justify-center snap-start">
+            <div className="absolute inset-0 bg-neutral-950 pointer-events-none z-0">
+              <div className="absolute inset-x-0 top-1/4 h-1/2 opacity-35 blur-[120px]" style={{ backgroundImage: "radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, transparent 70%)" }} />
+            </div>
+
+            <div className="relative w-full h-full max-w-[56.25vh] bg-black shadow-2xl flex items-center justify-center z-10 transition-all duration-500">
+              {isActive ? (
+                <iframe
+                  id={`yt-iframe-${video.id}`}
+                  title={video.title}
+                  src={embedUrl}
+                  allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
+                  className="w-full h-full absolute inset-0 border-none transition-opacity duration-500 pointer-events-none"
+                  loading="eager"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-neutral-900 flex flex-col items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
+                    <Icon name="play" className="w-6 h-6 text-white/50 pl-1" />
+                  </div>
+                </div>
+              )}
+
+              <div id={`tap-layer-${index}`} onClick={handleMediaTap} data-tap-layer="true" className="absolute inset-0 cursor-pointer z-20 select-none active:bg-white/5 transition-colors duration-100" />
+
+              {feedbackIcon && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 select-none">
+                  <div className="w-20 h-20 rounded-full bg-black/50 border border-white/20 flex items-center justify-center text-white scale-[1.3] opacity-0 animate-ping">
+                    <Icon name={feedbackIcon} className="w-8 h-8 fill-white" />
+                  </div>
+                </div>
+              )}
+
+              <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-black/80 via-black/35 to-transparent pointer-events-none z-20" />
+              <div className="absolute bottom-0 inset-x-0 h-80 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none z-20" />
+
+              {isBuffering && isActive && (
+                <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center pointer-events-none z-30">
+                  <Icon name="refresh" className="w-8 h-8 text-indigo-400 animate-spin" />
+                </div>
+              )}
+
+              <div className="absolute left-6 bottom-8 right-16 z-30 text-white flex flex-col gap-2.5 pointer-events-none">
+                <div className="flex items-center">
+                  <span className="bg-gradient-to-br from-indigo-500/90 to-purple-600/90 text-white font-bold text-[10px] tracking-widest uppercase px-3.5 py-1.5 rounded-xl border border-indigo-400/20 shadow-[0_0_12px_rgba(99,102,241,0.3)] pointer-events-auto cursor-pointer flex items-center gap-1.5 transition-all active:scale-95">
+                    <span>@{video.channel}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                  </span>
+                </div>
+
+                <h2 className="text-[14.5px] font-medium leading-relaxed tracking-wide text-neutral-100 drop-shadow-md pr-4 line-clamp-2">
+                  {video.title}
+                </h2>
+
+                {video.isFallback && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-amber-500 font-semibold uppercase tracking-wider mt-1 opacity-75">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span>Cinematic Fallback Stream</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         );
-}
+      }
 
-/* ==========================================
-    SOUND
-========================================== */
+      function Sidebar({ video, index, onLikeToggle, onOpenComments, onShare, isMuted, onMuteToggle, viewMode, onViewModeToggle }) {
+        const [likeAnimate, setLikeAnimate] = useState(false);
 
-.sound-overlay{
-    position:fixed;
+        function handleLikeClick() {
+          setLikeAnimate(true);
+          onLikeToggle();
+          setTimeout(() => setLikeAnimate(false), 450);
+        }
 
-    top:150px;
-    left:50%;
-
-    transform:translateX(-50%);
-
-    z-index:9999;
-
-    padding:
-        12px 18px;
-
-    border-radius:999px;
-
-    font-size:14px;
-    font-weight:600;
-
-    transition:
-        opacity .4s ease,
-        transform .4s ease;
-
-    pointer-events:none;
-}
-
-.sound-overlay.hidden{
-    opacity:0;
-
-    transform:
-        translateX(-50%)
-        translateY(-15px);
-}
-
-/* ==========================================
-    SCROLL BUTTONS
-========================================== */
-
-.scroll-controls{
-    position:fixed;
-
-    right:14px;
-    top:50%;
-
-    transform:translateY(-50%);
-
-    z-index:999;
-
-    display:flex;
-    flex-direction:column;
-
-    gap:14px;
-}
-
-.scroll-btn{
-    width:58px;
-    height:58px;
-
-    border-radius:50%;
-
-    border:none;
-
-    color:white;
-
-    font-size:24px;
-
-    cursor:pointer;
-
-    transition:
-        transform .15s ease;
-}
-
-.scroll-btn:hover{
-    transform:scale(1.06);
-}
-
-.scroll-btn:active{
-    transform:scale(.92);
-}
-
-/* ==========================================
-    LOADER
-========================================== */
-
-.loader-screen{
-    width:100%;
-    height:100vh;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-
-.loader-ring{
-    width:80px;
-    height:80px;
-
-    border-radius:50%;
-
-    border:
-        5px solid rgba(255,255,255,.08);
-
-    border-top:
-        5px solid white;
-
-    animation:
-        spin .8s linear infinite;
-}
-
-@keyframes spin{
-
-    to{
-        transform:rotate(360deg);
-    }
-
-}
-
-/* ==========================================
-    ERROR
-========================================== */
-
-.error{
-    width:100%;
-    height:100vh;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    padding:30px;
-
-    text-align:center;
-
-    font-size:18px;
-    font-weight:700;
-}
-
-/* ==========================================
-    MOBILE
-========================================== */
-
-@media(max-width:768px){
-
-    .scroll-controls{
-        top:auto;
-        bottom:140px;
-
-        transform:none;
-    }
-
-    .scroll-btn{
-        width:52px;
-        height:52px;
-    }
-
-}
-
-</style>
-</head>
-
-<body>
-
-<div id="app">
-
-    <div class="search-header">
-
-        <div class="search-shell glass">
-
-            <input
-                type="text"
-                id="searchInput"
-                class="search-input"
-                placeholder="Search shorts..."
-                autocomplete="off"
-                spellcheck="false"
+        return (
+          <div className="absolute right-4 bottom-28 z-30 flex flex-col items-center gap-4 pointer-events-auto select-none">
+            <ActionButton
+              id={`sound-btn-${index}`}
+              title={isMuted ? "Unmute Audio" : "Mute Audio"}
+              label={isMuted ? "Silent" : "Audio"}
+              icon={isMuted ? "volumeX" : "volume"}
+              active={!isMuted}
+              onClick={onMuteToggle}
             />
 
+            <ActionButton
+              id={`like-btn-${index}`}
+              title="Like Video"
+              label={video.likes.toLocaleString()}
+              icon="heart"
+              active={video.liked}
+              extraClass={likeAnimate ? "animate-bounce" : ""}
+              fill={video.liked ? "currentColor" : "none"}
+              onClick={handleLikeClick}
+            />
+
+            <ActionButton
+              id={`comments-btn-${index}`}
+              title="Open Comments"
+              label={video.commentsCount.toLocaleString()}
+              icon="message"
+              onClick={onOpenComments}
+            />
+
+            <ActionButton id={`share-btn-${index}`} title="Share Link" label="Share" icon="share" onClick={onShare} />
+
+            <div className="hidden sm:flex flex-col items-center">
+              <button
+                id="viewmode-toggle-btn"
+                onClick={onViewModeToggle}
+                title={viewMode === "feed" ? "Switch to Grid Explorer" : "Switch to Reel Feed"}
+                className="w-12 h-12 rounded-xl flex items-center justify-center bg-zinc-900/80 border border-zinc-800 hover:border-indigo-500 text-indigo-400 hover:text-indigo-300 backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95"
+              >
+                <Icon name={viewMode === "feed" ? "grid" : "scroll"} className="w-5 h-5" />
+              </button>
+              <span className="text-[9px] text-indigo-400 font-extrabold font-mono mt-1 shadow-sm tracking-widest uppercase text-center max-w-[56px] leading-3">
+                {viewMode === "feed" ? "Grid" : "Feed"}
+              </span>
+            </div>
+          </div>
+        );
+      }
+
+      function ActionButton({ id, title, label, icon, active = false, extraClass = "", fill = "none", onClick }) {
+        return (
+          <div className="flex flex-col items-center">
             <button
-                id="searchBtn"
-                class="search-btn glass"
+              id={id}
+              onClick={onClick}
+              title={title}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center border backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95 ${
+                active
+                  ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-indigo-400 text-white scale-[1.05] shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+                  : "bg-zinc-900/40 border-white/5 text-zinc-400 hover:bg-zinc-900/85 hover:text-white"
+              } ${extraClass}`}
             >
-                🔍
+              <Icon name={icon} className="w-5 h-5" fill={fill} />
             </button>
-
-        </div>
-
-    </div>
-
-    <div
-        id="searchHistory"
-        class="search-history glass"
-    ></div>
-
-    <div
-        id="soundOverlay"
-        class="sound-overlay glass"
-    >
-        Tap Screen For Sound 🔊
-    </div>
-
-    <div class="scroll-controls">
-
-        <button
-            id="scrollUp"
-            class="scroll-btn glass"
-        >
-            ↑
-        </button>
-
-        <button
-            id="scrollDown"
-            class="scroll-btn glass"
-        >
-            ↓
-        </button>
-
-    </div>
-
-    <div id="feed">
-
-        <div class="loader-screen">
-
-            <div class="loader-ring"></div>
-
-        </div>
-
-    </div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script src="https://www.youtube.com/iframe_api"></script>
-
-<script>
-
-(function(){
-
-"use strict";
-
-/* ==========================================
-    CONFIG
-========================================== */
-
-const CONFIG = {
-
-    SUPABASE_URL:
-        "https://cfmdniuossejstrywbbx.supabase.co",
-
-    SUPABASE_ANON_KEY:
-        "sb_publishable_W0tVnUX_Nju1OVAipUCoHQ_EmjUAQ7T",
-
-    YOUTUBE_API_KEY:
-        "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc",
-
-    MAX_RESULTS:
-        50
-
-};
-
-/* ==========================================
-    ELEMENTS
-========================================== */
-
-const elements = {
-
-    feed:
-        document.getElementById("feed"),
-
-    searchInput:
-        document.getElementById("searchInput"),
-
-    searchBtn:
-        document.getElementById("searchBtn"),
-
-    searchHistory:
-        document.getElementById("searchHistory"),
-
-    soundOverlay:
-        document.getElementById("soundOverlay"),
-
-    scrollUp:
-        document.getElementById("scrollUp"),
-
-    scrollDown:
-        document.getElementById("scrollDown")
-
-};
-
-/* ==========================================
-    APP STATE
-========================================== */
-
-const state = {
-
-    currentQuery:
-        "anime edits",
-
-    activeIndex:
-        -1,
-
-    globalMuted:
-        true,
-
-    hasInteracted:
-        false,
-
-    isPaused:
-        false,
-
-    observer:
-        null,
-
-    players:
-        []
-
-};
-
-/* ==========================================
-    UTILITIES
-========================================== */
-
-const Utils = (()=>{
-
-    function escapeHTML(str=""){
-
-        return str.replace(
-            /[&<>"']/g,
-            match=>({
-
-                "&":"&amp;",
-                "<":"&lt;",
-                ">":"&gt;",
-                '"':"&quot;",
-                "'":"&#39;"
-
-            })[match]
+            <span className="text-[10px] text-zinc-300 font-bold mt-1 shadow-sm font-mono tracking-wider uppercase text-center">
+              {label}
+            </span>
+          </div>
         );
+      }
 
-    }
+      function CommentPanel({ isOpen, onClose, videoId, videoTitle, comments, onAddComment }) {
+        const [inputText, setInputText] = useState("");
+        const scrollContainerRef = useRef(null);
 
-    return {
+        useEffect(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+          }
+        }, [comments, isOpen]);
 
-        escapeHTML
-
-    };
-
-})();
-
-/* ==========================================
-    SUPABASE SERVICE
-========================================== */
-
-const SupabaseService = (()=>{
-
-    /*
-        AUTH COMPLETELY REMOVED
-        No getSession()
-        No getUser()
-        No initializeAuth()
-    */
-
-    if(!window.__SUPABASE_CLIENT__){
-
-        window.__SUPABASE_CLIENT__ =
-            window.supabase.createClient(
-                CONFIG.SUPABASE_URL,
-                CONFIG.SUPABASE_ANON_KEY,
-                {
-                    auth:{
-                        persistSession:false,
-                        autoRefreshToken:false,
-                        detectSessionInUrl:false
-                    }
-                }
-            );
-
-    }
-
-    const client =
-        window.__SUPABASE_CLIENT__;
-
-    async function saveSearch(term){
-
-        try{
-
-            /*
-                Optional anonymous insert.
-                Your table must allow anon inserts
-                via RLS policies if you want this saved.
-            */
-
-            await client
-                .from("search_history")
-                .insert([{
-
-                    search_term:
-                        term,
-
-                    created_at:
-                        new Date().toISOString()
-
-                }]);
-
-        }catch(error){
-
-            /*
-                Silent fail to avoid app crashes
-            */
-
-            console.warn(
-                "Search history save skipped:",
-                error.message
-            );
-
+        function handleSubmit(event) {
+          event.preventDefault();
+          if (!inputText.trim()) return;
+          onAddComment(videoId, inputText.trim());
+          setInputText("");
         }
 
-    }
+        return (
+          <>
+            <div
+              id="comment-backdrop"
+              onClick={onClose}
+              className={`fixed inset-0 bg-black/60 z-40 transition-opacity duration-300 pointer-events-auto ${
+                isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            />
 
-    async function getRecentSearches(){
+            <div
+              id="comment-sheet"
+              className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto h-[65vh] bg-neutral-900/95 backdrop-blur-2xl border-t border-white/10 rounded-t-3xl z-50 flex flex-col transition-transform duration-300 ease-out transform pointer-events-auto ${
+                isOpen ? "translate-y-0" : "translate-y-full"
+              }`}
+            >
+              <div className="w-12 h-1 bg-white/20 rounded-full mx-auto my-3 flex-shrink-0" />
 
-        try{
+              <div className="px-5 pb-3 border-b border-white/10 flex justify-between items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-white font-bold text-base flex items-center gap-2">
+                    <Icon name="message" className="w-4 h-4 text-indigo-400" />
+                    <span>Comments ({comments.length})</span>
+                  </h3>
+                  <p className="text-xs text-zinc-500 truncate mt-0.5" title={videoTitle}>{videoTitle}</p>
+                </div>
+                <button
+                  id="close-comments-sheet"
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <Icon name="x" className="w-4 h-4" />
+                </button>
+              </div>
 
-            const {
-                data,
-                error
-            } = await client
-                .from("search_history")
-                .select("search_term")
-                .order(
-                    "created_at",
-                    { ascending:false }
-                )
-                .limit(5);
+              <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scroll-smooth">
+                {comments.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center py-10 opacity-40">
+                    <Icon name="message" className="w-10 h-10 mb-2 text-indigo-400" />
+                    <p className="text-sm font-medium text-white">No comments yet</p>
+                    <p className="text-xs text-white">Be the first to share your thoughts.</p>
+                  </div>
+                ) : (
+                  comments.map((item) => (
+                    <div key={item.id} className="flex gap-3 text-sm">
+                      <div className={`w-9 h-9 rounded-full ${item.avatarColor} text-white font-bold text-xs flex items-center justify-center shadow-inner flex-shrink-0 select-none`}>
+                        {item.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0 bg-white/5 rounded-2xl px-4 py-2.5 border border-white/5">
+                        <div className="flex justify-between items-baseline mb-0.5 gap-2">
+                          <span className="font-bold text-indigo-300 text-[13px]">{item.username}</span>
+                          <span className="text-[10px] text-zinc-500 font-medium">{item.timestamp}</span>
+                        </div>
+                        <p className="text-white/95 text-[13.5px] leading-relaxed break-words">{item.text}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
 
-            if(error){
-
-                console.warn(error.message);
-
-                return [];
-
-            }
-
-            return data || [];
-
-        }catch(error){
-
-            console.warn(error.message);
-
-            return [];
-
-        }
-
-    }
-
-    return {
-
-        client,
-        saveSearch,
-        getRecentSearches
-
-    };
-
-})();
-
-/* ==========================================
-    YOUTUBE SERVICE
-========================================== */
-
-const YouTubeService = (()=>{
-
-    async function search(query){
-
-        const endpoint =
-            `https://www.googleapis.com/youtube/v3/search` +
-            `?part=snippet` +
-            `&type=video` +
-            `&videoDuration=short` +
-            `&videoEmbeddable=true` +
-            `&safeSearch=none` +
-            `&maxResults=${CONFIG.MAX_RESULTS}` +
-            `&q=${encodeURIComponent(query)}` +
-            `&key=${CONFIG.YOUTUBE_API_KEY}`;
-
-        const response =
-            await fetch(endpoint);
-
-        if(!response.ok){
-
-            throw new Error(
-                "YouTube API request failed"
-            );
-
-        }
-
-        const data =
-            await response.json();
-
-        return (data.items || []).filter(
-            item =>
-                item.id &&
-                item.id.videoId
+              <form onSubmit={handleSubmit} className="p-4 border-t border-white/5 bg-zinc-950 flex gap-3 items-center">
+                <input
+                  id="new-comment-input"
+                  type="text"
+                  placeholder="Add a clean comment..."
+                  value={inputText}
+                  onChange={(event) => setInputText(event.target.value)}
+                  className="flex-1 bg-white/5 text-white placeholder-white/30 text-sm border border-white/10 rounded-full px-5 py-2.5 outline-none focus:border-indigo-500 transition-colors"
+                />
+                <button
+                  id="comment-post-btn"
+                  type="submit"
+                  disabled={!inputText.trim()}
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 disabled:opacity-40 hover:opacity-90 active:scale-95 flex items-center justify-center text-white transition-all cursor-pointer flex-shrink-0 shadow-lg shadow-indigo-500/20 border border-indigo-400/20"
+                >
+                  <Icon name="send" className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          </>
         );
+      }
 
-    }
+      function GridExplorer({ videos, onSelectVideo, currentQuery }) {
+        return (
+          <div className="w-full min-h-screen bg-black pt-28 pb-10 px-4 scroll-smooth">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
+                <div>
+                  <h1 className="text-white font-extralight text-2xl tracking-tight italic flex items-center gap-2">
+                    <Icon name="sparkles" className="w-5 h-5 text-indigo-400 animate-pulse" />
+                    <span className="font-semibold uppercase tracking-wider">Shorts</span>
+                  </h1>
+                  <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wider font-mono">
+                    System configured for: "{currentQuery}"
+                  </p>
+                </div>
+                <div className="text-[9px] bg-indigo-500/10 text-indigo-400 font-extrabold px-3 py-1.5 rounded-md border border-indigo-500/20 tracking-widest uppercase font-mono">
+                  Shorts Matrix
+                </div>
+              </div>
 
-    return {
+              {videos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-center py-24 text-neutral-500">
+                  <Icon name="image" className="w-12 h-12 mb-3 text-neutral-600 animate-bounce" />
+                  <p className="text-base font-semibold text-white">No reels loaded</p>
+                  <p className="text-xs mt-1">Try another search query.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {videos.map((video, index) => (
+                    <div
+                      id={`grid-card-${index}`}
+                      key={video.id + index}
+                      onClick={() => onSelectVideo(index)}
+                      className="group relative aspect-[9/16] bg-zinc-900/40 rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 transform hover:-translate-y-1.5"
+                    >
+                      <div className="absolute inset-0 z-0">
+                        <img
+                          src={`https://img.youtube.com/vi/${video.id}/hqdefault.jpg`}
+                          alt={video.title}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-black/15 group-hover:via-black/20 transition-colors" />
+                      </div>
 
-        search
+                      <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 opacity-90">
+                        {video.isFallback && (
+                          <span className="bg-amber-500/95 text-black font-extrabold text-[8px] tracking-wider px-2 py-0.5 rounded-sm uppercase select-none font-mono">
+                            Scenic
+                          </span>
+                        )}
+                      </div>
 
-    };
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 z-10 transition-opacity duration-300">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/40 scale-75 group-hover:scale-100 transition-transform duration-300">
+                          <Icon name="play" className="w-5 h-5 fill-white pl-0.5" />
+                        </div>
+                      </div>
 
-})();
-
-/* ==========================================
-    UI SERVICE
-========================================== */
-
-const UI = (()=>{
-
-    function showLoader(){
-
-        elements.feed.innerHTML = `
-
-            <div class="loader-screen">
-
-                <div class="loader-ring"></div>
-
+                      <div className="absolute bottom-0 inset-x-0 p-4 z-10 text-white flex flex-col gap-1.5">
+                        <span className="text-[10px] text-indigo-400 font-extrabold font-mono tracking-widest uppercase truncate">@{video.channel}</span>
+                        <h3 className="text-xs font-bold leading-relaxed line-clamp-2 text-zinc-100 group-hover:text-white transition-colors">
+                          {video.title}
+                        </h3>
+                        <div className="flex gap-3 text-[10px] text-zinc-500 font-mono mt-1 pt-2 border-t border-white/10">
+                          <span className="flex items-center gap-1">
+                            <Icon name="heart" className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>{video.likes}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Icon name="message" className="w-3.5 h-3.5 text-purple-400" />
+                            <span>{video.commentsCount}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+          </div>
+        );
+      }
 
-        `;
+      // -----------------------------------------------------------------------
+      // App
+      // -----------------------------------------------------------------------
 
-    }
+      function App() {
+        const [apiKey, setApiKey] = useState(() => localStorage.getItem("yt_api_key") || DEFAULT_YOUTUBE_API_KEY);
+        const [videos, setVideos] = useState([]);
+        const [currentQuery, setCurrentQuery] = useState("anime edits");
+        const [activeIndex, setActiveIndex] = useState(0);
+        const [isMuted, setIsMuted] = useState(true);
+        const [showSoundPrompt, setShowSoundPrompt] = useState(true);
+        const [viewMode, setViewMode] = useState("feed");
+        const [isLoading, setIsLoading] = useState(false);
+        const [isUsingFallback, setIsUsingFallback] = useState(false);
+        const [nextPageToken, setNextPageToken] = useState(null);
+        const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
+        const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+        const [toastMessage, setToastMessage] = useState(null);
 
-    function showError(message){
+        const toastTimeoutRef = useRef(null);
 
-        elements.feed.innerHTML = `
+        useEffect(() => {
+          localStorage.setItem("yt_api_key", apiKey);
+        }, [apiKey]);
 
-            <div class="error">
-
-                ${message}
-
-            </div>
-
-        `;
-
-    }
-
-    async function renderSearchHistory(){
-
-        const history =
-            await SupabaseService
-                .getRecentSearches();
-
-        elements.searchHistory.innerHTML =
-            "";
-
-        if(!history.length){
-
-            elements.searchHistory.style.display =
-                "none";
-
-            return;
-
+        function showToast(message) {
+          if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+          setToastMessage(message);
+          toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2800);
         }
 
-        elements.searchHistory.style.display =
-            "flex";
+        async function handleSearch(query) {
+          query = query.trim();
+          if (!query) return;
 
-        const uniqueTerms =
-            [...new Set(
-                history.map(
-                    item=>item.search_term
-                )
-            )];
+          setCurrentQuery(query);
+          setIsLoading(true);
+          setIsUsingFallback(false);
+          setNextPageToken(null);
 
-        uniqueTerms.forEach(term=>{
-
-            const chip =
-                document.createElement(
-                    "button"
-                );
-
-            chip.className =
-                "history-chip glass";
-
-            chip.textContent =
-                term;
-
-            chip.addEventListener(
-                "click",
-                ()=>{
-
-                    App.search(term);
-
-                }
+          try {
+            const response = await fetch(
+              `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=50&q=${encodeURIComponent(query)}&key=${apiKey}`
             );
-
-            elements.searchHistory.appendChild(
-                chip
-            );
-
-        });
-
-    }
-
-    return {
-
-        showLoader,
-        showError,
-        renderSearchHistory
-
-    };
-
-})();
-
-/* ==========================================
-    PLAYER MANAGER
-========================================== */
-
-const PlayerManager = (()=>{
-
-    function loadPlayer(index){
-
-        const item =
-            state.players[index];
-
-        if(!item)
-            return;
-
-        if(item.initialized)
-            return;
-
-        const mount =
-            document.getElementById(
-                `player-${index}`
-            );
-
-        if(!mount)
-            return;
-
-        item.initialized =
-            true;
-
-        try{
-
-            item.player =
-                new YT.Player(
-                    `player-${index}`,
-                    {
-
-                    videoId:
-                        item.videoId,
-
-                    playerVars:{
-
-                        autoplay:1,
-                        controls:0,
-                        modestbranding:1,
-                        rel:0,
-                        fs:0,
-                        playsinline:1,
-                        loop:1,
-                        playlist:item.videoId,
-                        mute:1,
-                        iv_load_policy:3,
-                        disablekb:1,
-                        enablejsapi:1,
-
-                        origin:
-                            window.location.origin
-
-                    },
-
-                    events:{
-
-                        onReady:(event)=>{
-
-                            try{
-
-                                if(
-                                    index ===
-                                    state.activeIndex
-                                ){
-
-                                    event.target.playVideo();
-
-                                    if(
-                                        state.globalMuted
-                                    ){
-
-                                        event.target.mute();
-
-                                    }else{
-
-                                        event.target.unMute();
-
-                                    }
-
-                                }
-
-                            }catch(err){}
-
-                        },
-
-                        onError:(err)=>{
-
-                            console.warn(
-                                "Player error:",
-                                err.data
-                            );
-
-                        }
-
-                    }
-
-                });
-
-        }catch(error){
-
-            console.warn(
-                "YT Player init failed:",
-                error
-            );
-
-        }
-
-    }
-
-    function destroyPlayer(index){
-
-        const item =
-            state.players[index];
-
-        if(
-            !item ||
-            !item.player
-        ){
-            return;
-        }
-
-        try{
-
-            item.player.stopVideo();
-
-        }catch(err){}
-
-        try{
-
-            item.player.destroy();
-
-        }catch(err){}
-
-        item.player =
-            null;
-
-        item.initialized =
-            false;
-
-    }
-
-    function ensureSlidingWindow(centerIndex){
-
-        const allowed =
-            new Set([
-
-                centerIndex - 1,
-                centerIndex,
-                centerIndex + 1
-
-            ]);
-
-        allowed.forEach(index=>{
-
-            if(
-                index >= 0 &&
-                index < state.players.length
-            ){
-
-                loadPlayer(index);
-
-            }
-
-        });
-
-        state.players.forEach((_,index)=>{
-
-            if(!allowed.has(index)){
-
-                destroyPlayer(index);
-
-            }
-
-        });
-
-    }
-
-    return {
-
-        ensureSlidingWindow
-
-    };
-
-})();
-
-/* ==========================================
-    FEED RENDERER
-========================================== */
-
-const FeedRenderer = (()=>{
-
-    function render(videos){
-
-        elements.feed.innerHTML = "";
-
-        state.players =
-            videos.map(video => ({
-
-                videoId:
-                    video.id.videoId,
-
-                player:
-                    null,
-
-                initialized:
-                    false
-
+            const data = await response.json();
+
+            if (data.error) throw new Error(data.error.message);
+            if (!data.items || data.items.length === 0) throw new Error("No video results yielded");
+            if (data.nextPageToken) setNextPageToken(data.nextPageToken);
+
+            const formatted = data.items.map((item) => ({
+              id: item.id.videoId,
+              title: item.snippet.title,
+              channel: item.snippet.channelTitle || "CreativeCreator",
+              likes: Math.floor(Math.random() * 4500) + 650,
+              commentsCount: Math.floor(Math.random() * 250) + 12,
+              liked: false,
+              shares: Math.floor(Math.random() * 800) + 40,
             }));
 
-        videos.forEach((video,index)=>{
-
-            const section =
-                document.createElement(
-                    "section"
-                );
-
-            section.className =
-                "video-section";
-
-            section.dataset.index =
-                index;
-
-            section.innerHTML = `
-
-                <div class="player-shell">
-
-                    <div id="player-${index}"></div>
-
-                </div>
-
-                <div class="top-gradient"></div>
-
-                <div class="bottom-gradient"></div>
-
-                <div class="meta glass">
-
-                    <div class="channel">
-
-                        @${Utils.escapeHTML(
-                            video.snippet.channelTitle
-                        )}
-
-                    </div>
-
-                    <div class="title">
-
-                        ${Utils.escapeHTML(
-                            video.snippet.title
-                        )}
-
-                    </div>
-
-                </div>
-
-                <div class="sidebar">
-
-                    <div class="action">
-
-                        <div class="action-btn glass">
-                            ❤️
-                        </div>
-
-                        <div class="action-label">
-                            Like
-                        </div>
-
-                    </div>
-
-                    <div class="action">
-
-                        <div class="action-btn glass">
-                            💬
-                        </div>
-
-                        <div class="action-label">
-                            Comment
-                        </div>
-
-                    </div>
-
-                    <div class="action">
-
-                        <div class="action-btn glass">
-                            📤
-                        </div>
-
-                        <div class="action-label">
-                            Share
-                        </div>
-
-                    </div>
-
-                </div>
-
-            `;
-
-            elements.feed.appendChild(
-                section
-            );
-
-        });
-
-        ObserverManager.setup();
-
-        requestAnimationFrame(()=>{
-
-            App.activateVideo(0);
-
-        });
-
-    }
-
-    return {
-
-        render
-
-    };
-
-})();
-
-/* ==========================================
-    OBSERVER MANAGER
-========================================== */
-
-const ObserverManager = (()=>{
-
-    function setup(){
-
-        if(state.observer){
-
-            state.observer.disconnect();
-
+            setVideos(formatted);
+            setActiveIndex(0);
+            setViewMode("feed");
+            showToast(`Loaded ${formatted.length} dynamic custom results`);
+          } catch (error) {
+            console.warn("Falling back to static scenic curations stream.", error);
+            setIsUsingFallback(true);
+            setVideos(FALLBACK_VIDEOS);
+            setActiveIndex(0);
+            setViewMode("feed");
+            showToast("Running on local scenic stream");
+          } finally {
+            setIsLoading(false);
+          }
         }
 
-        state.observer =
-            new IntersectionObserver(
+        async function loadMoreEndlessVideos() {
+          if (isLoading || videos.length === 0) return;
 
-            entries=>{
+          if (!isUsingFallback && apiKey && nextPageToken) {
+            setIsLoading(true);
+            try {
+              const response = await fetch(
+                `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=50&q=${encodeURIComponent(currentQuery)}&key=${apiKey}&pageToken=${nextPageToken}`
+              );
+              const data = await response.json();
+              if (data.error) throw new Error(data.error.message);
 
-                entries.forEach(entry=>{
+              if (data.items && data.items.length > 0) {
+                const formatted = data.items.map((item) => ({
+                  id: item.id.videoId,
+                  title: item.snippet.title,
+                  channel: item.snippet.channelTitle || "CreativeCreator",
+                  likes: Math.floor(Math.random() * 4500) + 650,
+                  commentsCount: Math.floor(Math.random() * 250) + 12,
+                  liked: false,
+                  shares: Math.floor(Math.random() * 800) + 40,
+                }));
 
-                    if(
-                        entry.isIntersecting &&
-                        entry.intersectionRatio >= .75
-                    ){
+                setNextPageToken(data.nextPageToken || null);
+                setVideos((previous) => [...previous, ...formatted]);
+                showToast(`Streamed ${formatted.length} more YouTube shorts`);
+                return;
+              }
+            } catch (error) {
+              console.warn("Could not fetch next page from YouTube API; appending curated clips.", error);
+            } finally {
+              setIsLoading(false);
+            }
+          }
 
-                        App.activateVideo(
-                            Number(
-                                entry.target.dataset.index
-                            )
-                        );
+          const additional = Array.from({ length: 10 }, () => {
+            const chosen = RANDOM_VIDEO_POOL[Math.floor(Math.random() * RANDOM_VIDEO_POOL.length)];
+            const suffixes = ["Hot", "Live", "Fresh", "New", "Loop"];
+            return {
+              id: chosen.id,
+              title: `${chosen.title} ${suffixes[Math.floor(Math.random() * suffixes.length)]}`,
+              channel: chosen.channel,
+              likes: Math.floor(Math.random() * 8500) + 1200,
+              commentsCount: Math.floor(Math.random() * 400) + 20,
+              liked: false,
+              shares: Math.floor(Math.random() * 1200) + 100,
+              isFallback: true,
+            };
+          });
 
-                    }
+          setVideos((previous) => [...previous, ...additional]);
+          showToast("Scenic clip stream synced live");
+        }
 
-                });
+        useEffect(() => {
+          handleSearch(currentQuery);
+        }, []);
 
+        useEffect(() => {
+          if (videos.length > 0 && activeIndex >= videos.length - 3) {
+            loadMoreEndlessVideos();
+          }
+        }, [activeIndex, videos.length]);
+
+        useEffect(() => {
+          if (viewMode !== "feed" || videos.length === 0) return;
+
+          const observer = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+                  const index = Number(entry.target.id.replace("video-section-", ""));
+                  if (!Number.isNaN(index) && index !== activeIndex) setActiveIndex(index);
+                }
+              });
             },
-            {
-                threshold:[0.75]
-            });
+            { threshold: [0.6] }
+          );
 
-        document
-            .querySelectorAll(
-                ".video-section"
+          const timer = setTimeout(() => {
+            videos.forEach((_, index) => {
+              const element = document.getElementById(`video-section-${index}`);
+              if (element) observer.observe(element);
+            });
+          }, 350);
+
+          return () => {
+            observer.disconnect();
+            clearTimeout(timer);
+          };
+        }, [videos, viewMode, activeIndex]);
+
+        function handleLikeToggle(index) {
+          setVideos((previous) => {
+            const clone = [...previous];
+            const item = clone[index];
+            if (!item) return clone;
+            clone[index] = {
+              ...item,
+              liked: !item.liked,
+              likes: item.liked ? Math.max(0, item.likes - 1) : item.likes + 1,
+            };
+            return clone;
+          });
+        }
+
+        function handleMuteToggle() {
+          setIsMuted((value) => !value);
+          setShowSoundPrompt(false);
+        }
+
+        function handleGlobalInteraction() {
+          if (!showSoundPrompt) return;
+          setIsMuted(false);
+          setShowSoundPrompt(false);
+        }
+
+        function handleShareClick(index) {
+          const video = videos[index];
+          if (!video) return;
+
+          const shareUrl = `https://www.youtube.com/watch?v=${video.id}`;
+          if (navigator.share) {
+            navigator.share({ title: video.title, url: shareUrl }).catch(() => {});
+            return;
+          }
+
+          navigator.clipboard.writeText(shareUrl).then(() => {
+            showToast("Reel link copied to clipboard");
+          });
+        }
+
+        function scrollIndexTo(direction) {
+          const nextIndex = direction === "up" ? activeIndex - 1 : activeIndex + 1;
+          if (nextIndex < 0 || nextIndex >= videos.length) return;
+
+          const targetElement = document.getElementById(`video-section-${nextIndex}`);
+          if (targetElement) {
+            targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+            setActiveIndex(nextIndex);
+          }
+        }
+
+        function handleAddComment(videoId, text) {
+          const newComment = {
+            id: `comment-${Date.now()}`,
+            videoId,
+            username: "You",
+            text,
+            timestamp: "Just now",
+            avatarColor: "bg-rose-500",
+          };
+
+          setAllComments((previous) => ({
+            ...previous,
+            [videoId]: [...(previous[videoId] || []), newComment],
+          }));
+
+          setVideos((previous) =>
+            previous.map((video) =>
+              video.id === videoId ? { ...video, commentsCount: video.commentsCount + 1 } : video
             )
-            .forEach(section=>{
-
-                state.observer.observe(
-                    section
-                );
-
-            });
-
-    }
-
-    return {
-
-        setup
-
-    };
-
-})();
-
-/* ==========================================
-    APP CONTROLLER
-========================================== */
-
-const App = (()=>{
-
-    async function initialize(){
-
-        try{
-
-            attachEvents();
-
-            await UI.renderSearchHistory();
-
-            await search(
-                state.currentQuery,
-                false
-            );
-
-        }catch(error){
-
-            console.error(
-                "App initialization failed:",
-                error
-            );
-
-            UI.showError(
-                "Failed To Initialize App"
-            );
-
+          );
         }
 
-    }
-
-    async function search(
-        query,
-        save=true
-    ){
-
-        state.currentQuery =
-            query.trim();
-
-        if(!state.currentQuery)
-            return;
-
-        UI.showLoader();
-
-        try{
-
-            if(save){
-
-                await SupabaseService
-                    .saveSearch(
-                        state.currentQuery
-                    );
-
-                await UI.renderSearchHistory();
-
-            }
-
-            const videos =
-                await YouTubeService.search(
-                    state.currentQuery
-                );
-
-            if(!videos.length){
-
-                UI.showError(
-                    "No Shorts Found"
-                );
-
-                return;
-
-            }
-
-            FeedRenderer.render(
-                videos
-            );
-
-        }catch(error){
-
-            console.error(error);
-
-            UI.showError(
-                "Failed To Load Videos"
-            );
-
+        function handleSelectFromGrid(index) {
+          setViewMode("feed");
+          setActiveIndex(index);
+          setTimeout(() => {
+            const element = document.getElementById(`video-section-${index}`);
+            if (element) element.scrollIntoView({ behavior: "auto", block: "start" });
+          }, 150);
         }
 
-    }
+        const activeVideo = videos[activeIndex];
+        const activeCommentList = activeVideo ? allComments[activeVideo.id] || [] : [];
 
-    function togglePause(){
+        return (
+          <div onClick={handleGlobalInteraction} className="relative w-full h-screen bg-[#050505] text-zinc-100 overflow-hidden font-sans select-none">
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-10" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
-        state.isPaused =
-            !state.isPaused;
+            <SearchHeader
+              currentQuery={currentQuery}
+              onSearch={handleSearch}
+              apiKey={apiKey}
+              onChangeApiKey={(value) => {
+                setApiKey(value);
+                setTimeout(() => handleSearch(currentQuery), 200);
+              }}
+              isLoading={isLoading}
+              isUsingFallback={isUsingFallback}
+            />
 
-        const current =
-            state.players[
-                state.activeIndex
-            ];
+            {viewMode === "feed" ? (
+              <div className="relative w-full h-screen pb-6">
+                <div className="w-full h-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
+                  {videos.map((video, index) => (
+                    <VideoSection key={video.id + index} video={video} index={index} isActive={index === activeIndex} isMuted={isMuted} onTapMedia={handleMuteToggle} />
+                  ))}
+                </div>
 
-        if(
-            current &&
-            current.player
-        ){
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 z-30 hidden md:flex flex-col gap-4">
+                  <button
+                    onClick={() => scrollIndexTo("up")}
+                    disabled={activeIndex === 0}
+                    title="Previous Reel"
+                    className="w-12 h-12 rounded-xl bg-zinc-900/40 border border-white/5 text-zinc-400 hover:text-white hover:border-indigo-500/50 flex items-center justify-center cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <Icon name="chevronUp" className="w-5 h-5" />
+                  </button>
+                  <div className="text-center font-mono text-xs font-bold text-zinc-500 py-1">
+                    {activeIndex + 1} / {videos.length}
+                  </div>
+                  <button
+                    onClick={() => scrollIndexTo("down")}
+                    disabled={activeIndex === videos.length - 1}
+                    title="Next Reel"
+                    className="w-12 h-12 rounded-xl bg-zinc-900/40 border border-white/5 text-zinc-400 hover:text-white hover:border-indigo-500/50 flex items-center justify-center cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <Icon name="chevronDown" className="w-5 h-5" />
+                  </button>
+                </div>
 
-            try{
+                {activeVideo && (
+                  <Sidebar
+                    video={activeVideo}
+                    index={activeIndex}
+                    onLikeToggle={() => handleLikeToggle(activeIndex)}
+                    onOpenComments={() => setIsCommentsOpen(true)}
+                    onShare={() => handleShareClick(activeIndex)}
+                    isMuted={isMuted}
+                    onMuteToggle={handleMuteToggle}
+                    viewMode={viewMode}
+                    onViewModeToggle={() => setViewMode("grid")}
+                  />
+                )}
+              </div>
+            ) : (
+              <GridExplorer videos={videos} onSelectVideo={handleSelectFromGrid} currentQuery={currentQuery} />
+            )}
 
-                if(state.isPaused){
+            {activeVideo && (
+              <CommentPanel
+                isOpen={isCommentsOpen}
+                onClose={() => setIsCommentsOpen(false)}
+                videoId={activeVideo.id}
+                videoTitle={activeVideo.title}
+                comments={activeCommentList}
+                onAddComment={handleAddComment}
+              />
+            )}
 
-                    current.player.pauseVideo();
+            {showSoundPrompt && (
+              <div
+                onClick={handleMuteToggle}
+                className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs shadow-xl shadow-indigo-500/20 backdrop-blur-md flex items-center gap-2 border border-indigo-400/20 cursor-pointer animate-bounce group"
+              >
+                <Icon name="volume" className="w-4 h-4 animate-pulse group-hover:scale-110 transition-transform text-teal-300" />
+                <span className="tracking-widest font-mono text-[10px] uppercase">Activate Audio Node</span>
+              </div>
+            )}
 
-                }else{
+            <footer className="fixed bottom-0 left-0 right-0 h-6 bg-indigo-600 text-white flex items-center overflow-hidden z-40 select-none pointer-events-none">
+              <div className="flex gap-16 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.25em] animate-marquee">
+                <span>Critical Update: Neural Core v2.4 initialized...</span>
+                <span>System Status: Optimal...</span>
+                <span>All visual nodes green...</span>
+                <span>Latency: 12ms / Stable...</span>
+                <span>Active curations synced...</span>
+                <span>Critical Update: Neural Core v2.4 initialized...</span>
+                <span>System Status: Optimal...</span>
+                <span>Ready for command.</span>
+              </div>
+            </footer>
 
-                    current.player.playVideo();
-
-                }
-
-            }catch(err){}
-
-        }
-
-    }
-
-    function activateVideo(index){
-
-        if(
-            index < 0 ||
-            index >= state.players.length
-        ){
-            return;
-        }
-
-        if(
-            state.activeIndex === index
-        ){
-            return;
-        }
-
-        state.activeIndex =
-            index;
-
-        PlayerManager
-            .ensureSlidingWindow(
-                index
-            );
-
-        state.players.forEach((item,i)=>{
-
-            if(!item.player)
-                return;
-
-            try{
-
-                if(i === index){
-
-                    if(state.isPaused){
-
-                        item.player.pauseVideo();
-
-                    }else{
-
-                        item.player.playVideo();
-
-                    }
-
-                    if(state.globalMuted){
-
-                        item.player.mute();
-
-                    }else{
-
-                        item.player.unMute();
-
-                    }
-
-                }else{
-
-                    item.player.pauseVideo();
-
-                }
-
-            }catch(err){}
-
-        });
-
-    }
-
-    function scrollTo(index){
-
-        if(index < 0)
-            return;
-
-        if(index >= state.players.length)
-            return;
-
-        const sections =
-            document.querySelectorAll(
-                ".video-section"
-            );
-
-        const target =
-            sections[index];
-
-        if(!target)
-            return;
-
-        target.scrollIntoView({
-
-            behavior:"smooth"
-
-        });
-
-    }
-
-    function enableSound(){
-
-        if(state.hasInteracted)
-            return;
-
-        state.hasInteracted =
-            true;
-
-        state.globalMuted =
-            false;
-
-        elements.soundOverlay.classList.add(
-            "hidden"
+            {toastMessage && (
+              <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl bg-zinc-900/95 text-zinc-100 border border-white/10 shadow-2xl flex items-center gap-2 font-semibold text-xs tracking-wider">
+                <Icon name="sparkles" className="w-3.5 h-3.5 text-indigo-400" />
+                <span>{toastMessage}</span>
+              </div>
+            )}
+          </div>
         );
+      }
 
-        const current =
-            state.players[
-                state.activeIndex
-            ];
-
-        if(
-            current &&
-            current.player
-        ){
-
-            try{
-
-                current.player.unMute();
-
-            }catch(err){}
-
-        }
-
-    }
-
-    function attachEvents(){
-
-        elements.searchBtn.addEventListener(
-            "click",
-            ()=>{
-
-                const value =
-                    elements.searchInput.value.trim();
-
-                if(!value)
-                    return;
-
-                search(value);
-
-            }
-        );
-
-        elements.searchInput.addEventListener(
-            "keydown",
-            event=>{
-
-                if(event.key === "Enter"){
-
-                    const value =
-                        elements.searchInput.value.trim();
-
-                    if(!value)
-                        return;
-
-                    search(value);
-
-                }
-
-            }
-        );
-
-        elements.scrollUp.addEventListener(
-            "click",
-            ()=>{
-
-                scrollTo(
-                    state.activeIndex - 1
-                );
-
-            }
-        );
-
-        elements.scrollDown.addEventListener(
-            "click",
-            ()=>{
-
-                scrollTo(
-                    state.activeIndex + 1
-                );
-
-            }
-        );
-
-        document.body.addEventListener(
-            "click",
-            (e)=>{
-
-                if(
-                    e.target.closest(".action-btn") ||
-                    e.target.closest(".scroll-btn") ||
-                    e.target.closest(".search-shell")
-                ){
-                    return;
-                }
-
-                togglePause();
-
-            }
-        );
-
-        document.body.addEventListener(
-            "click",
-            enableSound,
-            { once:true }
-        );
-
-        document.body.addEventListener(
-            "touchstart",
-            enableSound,
-            { once:true }
-        );
-
-    }
-
-    return {
-
-        initialize,
-        search,
-        activateVideo
-
-    };
-
-})();
-
-/* ==========================================
-    YOUTUBE API READY
-========================================== */
-
-window.onYouTubeIframeAPIReady =
-    function(){
-
-        console.log(
-            "YouTube API Ready"
-        );
-
-        App.initialize();
-
-    };
-
-})();
-</script>
-
-</body>
+      ReactDOM.createRoot(document.getElementById("root")).render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
+    </script>
+  </body>
 </html>
