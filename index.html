@@ -74,7 +74,11 @@
       // Constants
       // -----------------------------------------------------------------------
 
+      const DEFAULT_SEARCH_QUERY = "anime edits";
       const DEFAULT_YOUTUBE_API_KEY = "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc";
+      const SEARCH_BATCH_SIZE = 25;
+      const SEARCH_FANOUT = 8;
+      const NEARBY_RENDER_DISTANCE = 3;
 
       const FALLBACK_VIDEOS = [
         {
@@ -197,13 +201,128 @@
       }
 
       // -----------------------------------------------------------------------
+      // Recommendation helpers
+      // -----------------------------------------------------------------------
+
+      function uniqueValues(values) {
+        return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+      }
+
+      function shuffle(items) {
+        const copy = [...items];
+        for (let index = copy.length - 1; index > 0; index -= 1) {
+          const swapIndex = Math.floor(Math.random() * (index + 1));
+          [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+        }
+        return copy;
+      }
+
+      function randomBetween(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function formatMetric(value) {
+        if (value >= 1_000_000) {
+          return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1).replace(".0", "")}M`;
+        }
+
+        if (value >= 1_000) {
+          return `${(value / 1_000).toFixed(value >= 100_000 ? 0 : 1).replace(".0", "")}K`;
+        }
+
+        return String(value);
+      }
+
+      function createEngagementMetrics() {
+        const likes = randomBetween(50_000, 3_000_000);
+        const commentsCount = randomBetween(500, 100_000);
+        const shares = randomBetween(100, 50_000);
+        const views = randomBetween(100_000, 20_000_000);
+
+        return {
+          likes,
+          likesLabel: formatMetric(likes),
+          commentsCount,
+          commentsLabel: formatMetric(commentsCount),
+          shares,
+          sharesLabel: formatMetric(shares),
+          views,
+          viewsLabel: formatMetric(views),
+        };
+      }
+
+      function stripCommonSearchTerms(query) {
+        return query
+          .toLowerCase()
+          .replace(/\b(edits?|amv|phonk|shorts?|clips?|fights?|moments?|viral|best|aesthetic|transitions?)\b/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function generateRelatedQueries(query) {
+        const cleaned = query.trim().toLowerCase().replace(/\s+/g, " ") || DEFAULT_SEARCH_QUERY;
+        const subject = stripCommonSearchTerms(cleaned) || cleaned;
+
+        return uniqueValues([
+          cleaned,
+          `${subject} edits`,
+          `${subject} edit`,
+          `${subject} amv`,
+          `${subject} phonk`,
+          `${subject} phonk edits`,
+          `${subject} clips`,
+          `${subject} fight edits`,
+          `${subject} fights`,
+          `${subject} moments`,
+          `${subject} aesthetic edits`,
+          `${subject} transitions`,
+          `${subject} shorts`,
+          `best ${subject} edits`,
+          `viral ${subject} edits`,
+        ]);
+      }
+
+      function buildSearchUrl(query, apiKey, pageToken = "") {
+        const params = new URLSearchParams({
+          part: "snippet",
+          type: "video",
+          videoDuration: "short",
+          videoEmbeddable: "true",
+          maxResults: String(SEARCH_BATCH_SIZE),
+          q: `${query} shorts`,
+          key: apiKey,
+        });
+
+        if (pageToken) params.set("pageToken", pageToken);
+        return `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
+      }
+
+      function formatApiVideo(item) {
+        const videoId = item?.id?.videoId;
+        if (!videoId || item?.id?.kind !== "youtube#video") return null;
+        if (["live", "upcoming"].includes(item?.snippet?.liveBroadcastContent)) return null;
+
+        return {
+          id: videoId,
+          title: item.snippet.title,
+          channel: item.snippet.channelTitle || "CreativeCreator",
+          liked: false,
+          ...createEngagementMetrics(),
+        };
+      }
+
+      // -----------------------------------------------------------------------
       // Components
       // -----------------------------------------------------------------------
 
       function SearchHeader({ currentQuery, onSearch, apiKey, onChangeApiKey, isLoading, isUsingFallback }) {
-        const [inputValue, setInputValue] = useState("");
+        const [inputValue, setInputValue] = useState(currentQuery);
         const [showKeyPanel, setShowKeyPanel] = useState(false);
         const [tempKey, setTempKey] = useState(apiKey);
+
+        useEffect(() => {
+          setInputValue(currentQuery);
+        }, [currentQuery]);
 
         function handleSubmit(event) {
           event.preventDefault();
@@ -258,6 +377,11 @@
                 </button>
               </div>
 
+              <div className="mt-2 flex items-center justify-center gap-2 text-[10px] text-zinc-400 font-mono uppercase tracking-[0.2em]">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                <span>Watching: {currentQuery}</span>
+              </div>
+
               {showKeyPanel && (
                 <div className="mt-3 p-4 rounded-2xl bg-neutral-900/95 backdrop-blur-2xl border border-white/15 shadow-2xl">
                   <h4 className="text-white text-xs font-bold tracking-wider uppercase mb-1 flex items-center gap-2">
@@ -299,7 +423,7 @@
         );
       }
 
-      function VideoSection({ video, index, isActive, isMuted, onTapMedia }) {
+      function VideoSection({ video, index, isActive, shouldLoadEmbed, isMuted, onTapMedia }) {
         const [isPlaying, setIsPlaying] = useState(isActive);
         const [feedbackIcon, setFeedbackIcon] = useState(null);
         const [isBuffering, setIsBuffering] = useState(true);
@@ -330,14 +454,14 @@
             </div>
 
             <div className="relative w-full h-full max-w-[56.25vh] bg-black shadow-2xl flex items-center justify-center z-10 transition-all duration-500">
-              {isActive ? (
+              {shouldLoadEmbed ? (
                 <iframe
                   id={`yt-iframe-${video.id}`}
                   title={video.title}
                   src={embedUrl}
                   allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
                   className="w-full h-full absolute inset-0 border-none transition-opacity duration-500 pointer-events-none"
-                  loading="eager"
+                  loading={isActive ? "eager" : "lazy"}
                 />
               ) : (
                 <div className="absolute inset-0 bg-neutral-900 flex flex-col items-center justify-center">
@@ -378,6 +502,12 @@
                   {video.title}
                 </h2>
 
+                <div className="flex items-center gap-2 text-[10px] text-zinc-300 font-mono uppercase tracking-wider">
+                  <span>{video.viewsLabel} views</span>
+                  <span className="w-1 h-1 rounded-full bg-zinc-500" />
+                  <span>{video.sharesLabel} shares</span>
+                </div>
+
                 {video.isFallback && (
                   <div className="flex items-center gap-1.5 text-[10px] text-amber-500 font-semibold uppercase tracking-wider mt-1 opacity-75">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -413,7 +543,7 @@
             <ActionButton
               id={`like-btn-${index}`}
               title="Like Video"
-              label={video.likes.toLocaleString()}
+              label={video.likesLabel}
               icon="heart"
               active={video.liked}
               extraClass={likeAnimate ? "animate-bounce" : ""}
@@ -424,12 +554,12 @@
             <ActionButton
               id={`comments-btn-${index}`}
               title="Open Comments"
-              label={video.commentsCount.toLocaleString()}
+              label={video.commentsLabel}
               icon="message"
               onClick={onOpenComments}
             />
 
-            <ActionButton id={`share-btn-${index}`} title="Share Link" label="Share" icon="share" onClick={onShare} />
+            <ActionButton id={`share-btn-${index}`} title="Share Link" label={video.sharesLabel} icon="share" onClick={onShare} />
 
             <div className="hidden sm:flex flex-col items-center">
               <button
@@ -636,12 +766,13 @@
                         <div className="flex gap-3 text-[10px] text-zinc-500 font-mono mt-1 pt-2 border-t border-white/10">
                           <span className="flex items-center gap-1">
                             <Icon name="heart" className="w-3.5 h-3.5 text-indigo-400" />
-                            <span>{video.likes}</span>
+                            <span>{video.likesLabel}</span>
                           </span>
                           <span className="flex items-center gap-1">
                             <Icon name="message" className="w-3.5 h-3.5 text-purple-400" />
-                            <span>{video.commentsCount}</span>
+                            <span>{video.commentsLabel}</span>
                           </span>
+                          <span>{video.viewsLabel}</span>
                         </div>
                       </div>
                     </div>
@@ -660,21 +791,26 @@
       function App() {
         const [apiKey, setApiKey] = useState(() => localStorage.getItem("yt_api_key") || DEFAULT_YOUTUBE_API_KEY);
         const [videos, setVideos] = useState([]);
-        const [currentQuery, setCurrentQuery] = useState("anime edits");
+        const [currentQuery, setCurrentQuery] = useState(DEFAULT_SEARCH_QUERY);
         const [activeIndex, setActiveIndex] = useState(0);
         const [isMuted, setIsMuted] = useState(true);
         const [showSoundPrompt, setShowSoundPrompt] = useState(true);
         const [viewMode, setViewMode] = useState("feed");
         const [isLoading, setIsLoading] = useState(false);
         const [isUsingFallback, setIsUsingFallback] = useState(false);
-        const [nextPageToken, setNextPageToken] = useState(null);
         const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
         const [isCommentsOpen, setIsCommentsOpen] = useState(false);
         const [toastMessage, setToastMessage] = useState(null);
 
         const toastTimeoutRef = useRef(null);
+        const feedContainerRef = useRef(null);
+        const loadedVideoIdsRef = useRef(new Set());
+        const requestGenerationRef = useRef(0);
+        const queryCursorRef = useRef(0);
+        const apiKeyRef = useRef(apiKey);
 
         useEffect(() => {
+          apiKeyRef.current = apiKey;
           localStorage.setItem("yt_api_key", apiKey);
         }, [apiKey]);
 
@@ -684,111 +820,117 @@
           toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2800);
         }
 
-        async function handleSearch(query) {
-          query = query.trim();
-          if (!query) return;
+        async function fetchDiscoveryBatch(baseQuery, options = {}) {
+          const { reset = false, generation = requestGenerationRef.current } = options;
+          const relatedQueries = generateRelatedQueries(baseQuery);
+          const startOffset = reset ? 0 : queryCursorRef.current;
 
-          setCurrentQuery(query);
+          if (reset) {
+            loadedVideoIdsRef.current = new Set();
+            queryCursorRef.current = 0;
+          }
+
+          const queries = shuffle(
+            Array.from({ length: SEARCH_FANOUT }, (_, index) => relatedQueries[(startOffset + index) % relatedQueries.length])
+          );
+
+          const results = await Promise.allSettled(
+            queries.map(async (query) => {
+              const response = await fetch(buildSearchUrl(query, apiKeyRef.current));
+              const data = await response.json();
+              if (data.error) throw new Error(data.error.message);
+              return data.items || [];
+            })
+          );
+
+          if (generation !== requestGenerationRef.current) return [];
+
+          const successfulItems = results
+            .filter((result) => result.status === "fulfilled")
+            .flatMap((result) => result.value);
+
+          if (!successfulItems.length) {
+            throw new Error("YouTube API did not return any video results");
+          }
+
+          const freshVideos = [];
+          for (const item of shuffle(successfulItems)) {
+            const formatted = formatApiVideo(item);
+            if (!formatted || loadedVideoIdsRef.current.has(formatted.id)) continue;
+
+            loadedVideoIdsRef.current.add(formatted.id);
+            freshVideos.push(formatted);
+          }
+
+          queryCursorRef.current = startOffset + SEARCH_FANOUT;
+          return shuffle(freshVideos);
+        }
+
+        async function handleSearch(query) {
+          const trimmedQuery = (query || DEFAULT_SEARCH_QUERY).trim() || DEFAULT_SEARCH_QUERY;
+          const generation = requestGenerationRef.current + 1;
+          requestGenerationRef.current = generation;
+
+          setCurrentQuery(trimmedQuery);
+          setVideos([]);
+          setActiveIndex(0);
           setIsLoading(true);
           setIsUsingFallback(false);
-          setNextPageToken(null);
+          setViewMode("feed");
+          setIsCommentsOpen(false);
+
+          requestAnimationFrame(() => {
+            if (feedContainerRef.current) feedContainerRef.current.scrollTo({ top: 0, behavior: "auto" });
+          });
 
           try {
-            const response = await fetch(
-              `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=50&q=${encodeURIComponent(query)}&key=${apiKey}`
-            );
-            const data = await response.json();
+            const freshVideos = await fetchDiscoveryBatch(trimmedQuery, { reset: true, generation });
+            if (generation !== requestGenerationRef.current) return;
+            if (!freshVideos.length) throw new Error("No unique Shorts results yielded");
 
-            if (data.error) throw new Error(data.error.message);
-            if (!data.items || data.items.length === 0) throw new Error("No video results yielded");
-            if (data.nextPageToken) setNextPageToken(data.nextPageToken);
-
-            const formatted = data.items.map((item) => ({
-              id: item.id.videoId,
-              title: item.snippet.title,
-              channel: item.snippet.channelTitle || "CreativeCreator",
-              likes: Math.floor(Math.random() * 4500) + 650,
-              commentsCount: Math.floor(Math.random() * 250) + 12,
-              liked: false,
-              shares: Math.floor(Math.random() * 800) + 40,
-            }));
-
-            setVideos(formatted);
-            setActiveIndex(0);
-            setViewMode("feed");
-            showToast(`Loaded ${formatted.length} dynamic custom results`);
+            setVideos(freshVideos);
+            showToast(`Loaded ${freshVideos.length} ${trimmedQuery} shorts`);
           } catch (error) {
-            console.warn("Falling back to static scenic curations stream.", error);
+            if (generation !== requestGenerationRef.current) return;
+            console.warn("YouTube discovery failed completely; using fallback stream.", error);
+            const fallback = FALLBACK_VIDEOS.map((video) => ({ ...video, ...createEngagementMetrics() }));
+            loadedVideoIdsRef.current = new Set(fallback.map((video) => video.id));
             setIsUsingFallback(true);
-            setVideos(FALLBACK_VIDEOS);
-            setActiveIndex(0);
-            setViewMode("feed");
-            showToast("Running on local scenic stream");
+            setVideos(shuffle(fallback));
+            showToast("YouTube API failed; fallback stream loaded");
           } finally {
-            setIsLoading(false);
+            if (generation === requestGenerationRef.current) setIsLoading(false);
           }
         }
 
         async function loadMoreEndlessVideos() {
           if (isLoading || videos.length === 0) return;
 
-          if (!isUsingFallback && apiKey && nextPageToken) {
-            setIsLoading(true);
-            try {
-              const response = await fetch(
-                `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=50&q=${encodeURIComponent(currentQuery)}&key=${apiKey}&pageToken=${nextPageToken}`
-              );
-              const data = await response.json();
-              if (data.error) throw new Error(data.error.message);
+          const generation = requestGenerationRef.current;
+          setIsLoading(true);
 
-              if (data.items && data.items.length > 0) {
-                const formatted = data.items.map((item) => ({
-                  id: item.id.videoId,
-                  title: item.snippet.title,
-                  channel: item.snippet.channelTitle || "CreativeCreator",
-                  likes: Math.floor(Math.random() * 4500) + 650,
-                  commentsCount: Math.floor(Math.random() * 250) + 12,
-                  liked: false,
-                  shares: Math.floor(Math.random() * 800) + 40,
-                }));
+          try {
+            const moreVideos = await fetchDiscoveryBatch(currentQuery, { reset: false, generation });
+            if (generation !== requestGenerationRef.current) return;
+            if (!moreVideos.length) throw new Error("No new unique videos returned");
 
-                setNextPageToken(data.nextPageToken || null);
-                setVideos((previous) => [...previous, ...formatted]);
-                showToast(`Streamed ${formatted.length} more YouTube shorts`);
-                return;
-              }
-            } catch (error) {
-              console.warn("Could not fetch next page from YouTube API; appending curated clips.", error);
-            } finally {
-              setIsLoading(false);
-            }
+            setVideos((previous) => [...previous, ...moreVideos]);
+            showToast(`Added ${moreVideos.length} more ${currentQuery} shorts`);
+          } catch (error) {
+            if (generation !== requestGenerationRef.current) return;
+            console.warn("Endless recommendation loading paused after API failure.", error);
+            showToast("API limit reached; recommendations paused");
+          } finally {
+            if (generation === requestGenerationRef.current) setIsLoading(false);
           }
-
-          const additional = Array.from({ length: 10 }, () => {
-            const chosen = RANDOM_VIDEO_POOL[Math.floor(Math.random() * RANDOM_VIDEO_POOL.length)];
-            const suffixes = ["Hot", "Live", "Fresh", "New", "Loop"];
-            return {
-              id: chosen.id,
-              title: `${chosen.title} ${suffixes[Math.floor(Math.random() * suffixes.length)]}`,
-              channel: chosen.channel,
-              likes: Math.floor(Math.random() * 8500) + 1200,
-              commentsCount: Math.floor(Math.random() * 400) + 20,
-              liked: false,
-              shares: Math.floor(Math.random() * 1200) + 100,
-              isFallback: true,
-            };
-          });
-
-          setVideos((previous) => [...previous, ...additional]);
-          showToast("Scenic clip stream synced live");
         }
 
         useEffect(() => {
-          handleSearch(currentQuery);
+          handleSearch(DEFAULT_SEARCH_QUERY);
         }, []);
 
         useEffect(() => {
-          if (videos.length > 0 && activeIndex >= videos.length - 3) {
+          if (videos.length > 0 && activeIndex >= videos.length - 6) {
             loadMoreEndlessVideos();
           }
         }, [activeIndex, videos.length]);
@@ -830,6 +972,7 @@
               ...item,
               liked: !item.liked,
               likes: item.liked ? Math.max(0, item.likes - 1) : item.likes + 1,
+              likesLabel: formatMetric(item.liked ? Math.max(0, item.likes - 1) : item.likes + 1),
             };
             return clone;
           });
@@ -889,7 +1032,9 @@
 
           setVideos((previous) =>
             previous.map((video) =>
-              video.id === videoId ? { ...video, commentsCount: video.commentsCount + 1 } : video
+              video.id === videoId
+                ? { ...video, commentsCount: video.commentsCount + 1, commentsLabel: formatMetric(video.commentsCount + 1) }
+                : video
             )
           );
         }
@@ -915,6 +1060,7 @@
               onSearch={handleSearch}
               apiKey={apiKey}
               onChangeApiKey={(value) => {
+                apiKeyRef.current = value;
                 setApiKey(value);
                 setTimeout(() => handleSearch(currentQuery), 200);
               }}
@@ -924,10 +1070,23 @@
 
             {viewMode === "feed" ? (
               <div className="relative w-full h-screen pb-6">
-                <div className="w-full h-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
-                  {videos.map((video, index) => (
-                    <VideoSection key={video.id + index} video={video} index={index} isActive={index === activeIndex} isMuted={isMuted} onTapMedia={handleMuteToggle} />
-                  ))}
+                <div ref={feedContainerRef} className="w-full h-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
+                  {videos.map((video, index) => {
+                    const distanceFromActive = Math.abs(index - activeIndex);
+                    const shouldLoadEmbed = index === activeIndex || (index > activeIndex && index <= activeIndex + NEARBY_RENDER_DISTANCE) || distanceFromActive <= 1;
+
+                    return (
+                      <VideoSection
+                        key={video.id + index}
+                        video={video}
+                        index={index}
+                        isActive={index === activeIndex}
+                        shouldLoadEmbed={shouldLoadEmbed}
+                        isMuted={isMuted}
+                        onTapMedia={handleMuteToggle}
+                      />
+                    );
+                  })}
                 </div>
 
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 z-30 hidden md:flex flex-col gap-4">
