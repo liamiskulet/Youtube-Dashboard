@@ -77,7 +77,6 @@
       const DEFAULT_SEARCH_QUERY = "anime edits";
       const DEFAULT_YOUTUBE_API_KEY = "AIzaSyBeL88mCyBYNZAnxPQ4sExqTo1HjTjQ_Oc";
       const SEARCH_BATCH_SIZE = 5;
-      const SEARCH_FANOUT = 8;
       const NEARBY_RENDER_DISTANCE = 3;
 
       const FALLBACK_VIDEOS = [
@@ -121,27 +120,6 @@
           shares: 198,
           isFallback: true,
         },
-      ];
-
-      const RANDOM_VIDEO_POOL = [
-        { id: "gS-K01j1N6o", title: "Midnight cruise through neon city rain", channel: "NeoVibe" },
-        { id: "7zAtL-59vQ4", title: "Extreme canyon flying close call drone POV", channel: "SpeedFlyer" },
-        { id: "C3-6D-Qy7k8", title: "Secret gardens of old Tokyo sunset walk", channel: "Wanderlust" },
-        { id: "M3_o4N-SveY", title: "Cozy fireplace cabin desk setup study", channel: "WarmDen" },
-        { id: "YV9NCOt6T0w", title: "Hypnotic deep ocean jellyfish dance loop", channel: "SubAqua" },
-        { id: "f7v_cTirh_E", title: "Satisfying pristine sand carving ASMR", channel: "CalmCraft" },
-        { id: "g6N3R85b7Ew", title: "Custom solid brass mechanical keyboard build", channel: "KeebClub" },
-        { id: "dQw4w9WgXcQ", title: "Never gonna give you up - 4K remaster", channel: "RetroSounds" },
-        { id: "3S9v_Z-cZfQ", title: "First person POV mountain biking steep trail", channel: "GravelHead" },
-        { id: "88k-S7Y-b3U", title: "Amazing neon skatepark night session tricks", channel: "OlliePro" },
-        { id: "7T8zXf8qD1g", title: "Red panda discovering snow for the first time", channel: "WildLife" },
-        { id: "0s2A7CPhm_M", title: "Restoring a 1920s rusty vintage pocket watch", channel: "TimeCraft" },
-        { id: "6zVv8CPrg8Y", title: "Insane sunset rooftop skateboarding line", channel: "FlipTrips" },
-        { id: "8Cg5D_8i_t0", title: "Master potter throwing clay on spinning wheel", channel: "ClayCraft" },
-        { id: "J_3d-4E38vM", title: "Earth revolving from the International Space Station", channel: "AstroEye" },
-        { id: "O4-bC0v222U", title: "Pacman arcade world record speedrun gameplay", channel: "8BitRetro" },
-        { id: "S6fC9uJ2Ceg", title: "Crispy golden Japanese street food omelet setup", channel: "TastyBites" },
-        { id: "Sg46I-z2p5g", title: "Flying taxi concept over future city grid", channel: "Futurism" },
       ];
 
       const INITIAL_COMMENTS = {
@@ -201,12 +179,8 @@
       }
 
       // -----------------------------------------------------------------------
-      // Recommendation helpers
+      // Helpers
       // -----------------------------------------------------------------------
-
-      function uniqueValues(values) {
-        return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
-      }
 
       function shuffle(items) {
         const copy = [...items];
@@ -225,11 +199,9 @@
         if (value >= 1_000_000) {
           return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1).replace(".0", "")}M`;
         }
-
         if (value >= 1_000) {
           return `${(value / 1_000).toFixed(value >= 100_000 ? 0 : 1).replace(".0", "")}K`;
         }
-
         return String(value);
       }
 
@@ -251,54 +223,23 @@
         };
       }
 
-      function stripCommonSearchTerms(query) {
-        return query
-          .toLowerCase()
-          .replace(/\b(edits?|amv|phonk|shorts?|clips?|fights?|moments?|viral|best|aesthetic|transitions?)\b/g, "")
-          .replace(/\s+/g, " ")
-          .trim();
-      }
-
-      function generateRelatedQueries(query) {
-        const cleaned = query.trim().toLowerCase().replace(/\s+/g, " ") || DEFAULT_SEARCH_QUERY;
-        const subject = stripCommonSearchTerms(cleaned) || cleaned;
-
-        return uniqueValues([
-          cleaned,
-          `${subject} edits`,
-          `${subject} edit`,
-          `${subject} amv`,
-          `${subject} phonk`,
-          `${subject} phonk edits`,
-          `${subject} clips`,
-          `${subject} fight edits`,
-          `${subject} fights`,
-          `${subject} moments`,
-          `${subject} aesthetic edits`,
-          `${subject} transitions`,
-          `${subject} shorts`,
-          `best ${subject} edits`,
-          `viral ${subject} edits`,
-        ]);
-      }
-
       function buildSearchUrl(query, apiKey, pageToken = "") {
-  const params = new URLSearchParams({
-    part: "snippet",
-    type: "video",
-    videoDuration: "short",
-    videoEmbeddable: "true",
-    maxResults: "5",
-    q: `${query} shorts`,
-    key: apiKey,
-  });
+        const params = new URLSearchParams({
+          part: "snippet",
+          type: "video",
+          videoDuration: "short",
+          videoEmbeddable: "true",
+          maxResults: String(SEARCH_BATCH_SIZE),
+          q: `${query} shorts`,
+          key: apiKey,
+        });
 
-  if (pageToken) {
-    params.set("pageToken", pageToken);
-  }
+        if (pageToken) {
+          params.set("pageToken", pageToken);
+        }
 
-  return `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
-}
+        return `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
+      }
 
       function formatApiVideo(item) {
         const videoId = item?.id?.videoId;
@@ -801,24 +742,18 @@
         const [viewMode, setViewMode] = useState("feed");
         const [isLoading, setIsLoading] = useState(false);
         const [isUsingFallback, setIsUsingFallback] = useState(false);
-
-const [nextPageToken, setNextPageToken] = useState("");
-const [hasMoreVideos, setHasMoreVideos] = useState(true);
-
-const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
+        const [nextPageToken, setNextPageToken] = useState("");
+        const [hasMoreVideos, setHasMoreVideos] = useState(true);
+        const [allComments, setAllComments] = useState(() => INITIAL_COMMENTS);
         const [isCommentsOpen, setIsCommentsOpen] = useState(false);
         const [toastMessage, setToastMessage] = useState(null);
 
         const feedContainerRef = useRef(null);
-
-const loadMoreObserverRef = useRef(null);
-const lastVideoRef = useRef(null);
-
-const loadedVideoIdsRef = useRef(new Set());
+        const toastTimeoutRef = useRef(null);
         const loadedVideoIdsRef = useRef(new Set());
         const requestGenerationRef = useRef(0);
-        const queryCursorRef = useRef(0);
         const apiKeyRef = useRef(apiKey);
+        const isLoadingMoreRef = useRef(false);
 
         useEffect(() => {
           apiKeyRef.current = apiKey;
@@ -832,95 +767,42 @@ const loadedVideoIdsRef = useRef(new Set());
         }
 
         async function fetchDiscoveryBatch(baseQuery, options = {}) {
-  const {
-    reset = false,
-    generation = requestGenerationRef.current,
-  } = options;
-
-  if (reset) {
-    loadedVideoIdsRef.current = new Set();
-    setNextPageToken("");
-    setHasMoreVideos(true);
-  }
-
-  const response = await fetch(
-    buildSearchUrl(
-      baseQuery,
-      apiKeyRef.current,
-      reset ? "" : nextPageToken
-    )
-  );
-
-  const data = await response.json();
-
-  if (generation !== requestGenerationRef.current) {
-    return [];
-  }
-
-  if (data.error) {
-    throw new Error(data.error.message);
-  }
-
-  setNextPageToken(data.nextPageToken || "");
-  setHasMoreVideos(Boolean(data.nextPageToken));
-
-  const freshVideos = [];
-
-  for (const item of data.items || []) {
-    const formatted = formatApiVideo(item);
-
-    if (!formatted) continue;
-    if (loadedVideoIdsRef.current.has(formatted.id)) continue;
-
-    loadedVideoIdsRef.current.add(formatted.id);
-    freshVideos.push(formatted);
-  }
-
-  return freshVideos;
-}
           const { reset = false, generation = requestGenerationRef.current } = options;
-          const relatedQueries = generateRelatedQueries(baseQuery);
-          const startOffset = reset ? 0 : queryCursorRef.current;
+
+          const pageToken = reset ? "" : nextPageToken;
 
           if (reset) {
             loadedVideoIdsRef.current = new Set();
-            queryCursorRef.current = 0;
+            setNextPageToken("");
+            setHasMoreVideos(true);
           }
 
-          const queries = shuffle(
-            Array.from({ length: SEARCH_FANOUT }, (_, index) => relatedQueries[(startOffset + index) % relatedQueries.length])
-          );
+          const response = await fetch(buildSearchUrl(baseQuery, apiKeyRef.current, pageToken));
+          const data = await response.json();
 
-          const results = await Promise.allSettled(
-            queries.map(async (query) => {
-              const response = await fetch(buildSearchUrl(query, apiKeyRef.current));
-              const data = await response.json();
-              if (data.error) throw new Error(data.error.message);
-              return data.items || [];
-            })
-          );
-
-          if (generation !== requestGenerationRef.current) return [];
-
-          const successfulItems = results
-            .filter((result) => result.status === "fulfilled")
-            .flatMap((result) => result.value);
-
-          if (!successfulItems.length) {
-            throw new Error("YouTube API did not return any video results");
+          if (generation !== requestGenerationRef.current) {
+            return [];
           }
+
+          if (data.error) {
+            throw new Error(data.error.message);
+          }
+
+          const newToken = data.nextPageToken || "";
+          setNextPageToken(newToken);
+          setHasMoreVideos(Boolean(newToken));
 
           const freshVideos = [];
-          for (const item of shuffle(successfulItems)) {
-            const formatted = formatApiVideo(item);
-            if (!formatted || loadedVideoIdsRef.current.has(formatted.id)) continue;
 
+          for (const item of data.items || []) {
+            const formatted = formatApiVideo(item);
+            if (!formatted) continue;
+            if (loadedVideoIdsRef.current.has(formatted.id)) continue;
             loadedVideoIdsRef.current.add(formatted.id);
             freshVideos.push(formatted);
           }
 
-          queryCursorRef.current = startOffset + SEARCH_FANOUT;
-          return shuffle(freshVideos);
+          return freshVideos;
         }
 
         async function handleSearch(query) {
@@ -935,6 +817,7 @@ const loadedVideoIdsRef = useRef(new Set());
           setIsUsingFallback(false);
           setViewMode("feed");
           setIsCommentsOpen(false);
+          isLoadingMoreRef.current = false;
 
           requestAnimationFrame(() => {
             if (feedContainerRef.current) feedContainerRef.current.scrollTo({ top: 0, behavior: "auto" });
@@ -953,6 +836,7 @@ const loadedVideoIdsRef = useRef(new Set());
             const fallback = FALLBACK_VIDEOS.map((video) => ({ ...video, ...createEngagementMetrics() }));
             loadedVideoIdsRef.current = new Set(fallback.map((video) => video.id));
             setIsUsingFallback(true);
+            setHasMoreVideos(false);
             setVideos(shuffle(fallback));
             showToast("YouTube API failed; fallback stream loaded");
           } finally {
@@ -961,70 +845,47 @@ const loadedVideoIdsRef = useRef(new Set());
         }
 
         async function loadMoreEndlessVideos() {
-  if (
-    isLoading ||
-    !hasMoreVideos ||
-    videos.length === 0
-  ) {
-    return;
-  }
+          if (isLoadingMoreRef.current || isLoading || !hasMoreVideos || videos.length === 0) return;
 
-  const generation = requestGenerationRef.current;
-
-  setIsLoading(true);
-
-  try {
-    const moreVideos = await fetchDiscoveryBatch(
-      currentQuery,
-      { generation }
-    );
-
-    if (generation !== requestGenerationRef.current) {
-      return;
-    }
-
-    if (moreVideos.length) {
-      setVideos((previous) => [
-        ...previous,
-        ...moreVideos,
-      ]);
-    }
-  } catch (error) {
-    console.error(error);
-  } finally {
-    if (generation === requestGenerationRef.current) {
-      setIsLoading(false);
-    }
-  }
-}
-          if (isLoading || videos.length === 0) return;
-
+          isLoadingMoreRef.current = true;
           const generation = requestGenerationRef.current;
           setIsLoading(true);
 
           try {
             const moreVideos = await fetchDiscoveryBatch(currentQuery, { reset: false, generation });
             if (generation !== requestGenerationRef.current) return;
-            if (!moreVideos.length) throw new Error("No new unique videos returned");
 
-            setVideos((previous) => [...previous, ...moreVideos]);
-            showToast(`Added ${moreVideos.length} more ${currentQuery} shorts`);
+            if (moreVideos.length) {
+              setVideos((previous) => [...previous, ...moreVideos]);
+              showToast(`Added ${moreVideos.length} more ${currentQuery} shorts`);
+            } else {
+              setHasMoreVideos(false);
+              showToast("All shorts loaded");
+            }
           } catch (error) {
             if (generation !== requestGenerationRef.current) return;
             console.warn("Endless recommendation loading paused after API failure.", error);
             showToast("API limit reached; recommendations paused");
           } finally {
             if (generation === requestGenerationRef.current) setIsLoading(false);
+            isLoadingMoreRef.current = false;
           }
         }
 
+        // Initial load
         useEffect(() => {
           handleSearch(DEFAULT_SEARCH_QUERY);
         }, []);
 
+        // Auto-load more when approaching the end of the feed
         useEffect(() => {
-  if (viewMode !== "feed" || videos.length === 0) return;
+          if (viewMode !== "feed" || videos.length === 0) return;
+          if (activeIndex >= videos.length - 3) {
+            loadMoreEndlessVideos();
+          }
+        }, [activeIndex, videos.length, viewMode]);
 
+        // IntersectionObserver to detect active video and near-end loading
         useEffect(() => {
           if (viewMode !== "feed" || videos.length === 0) return;
 
@@ -1033,7 +894,9 @@ const loadedVideoIdsRef = useRef(new Set());
               entries.forEach((entry) => {
                 if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
                   const index = Number(entry.target.id.replace("video-section-", ""));
-                  if (!Number.isNaN(index) && index !== activeIndex) setActiveIndex(index);
+                  if (!Number.isNaN(index) && index !== activeIndex) {
+                    setActiveIndex(index);
+                  }
                 }
               });
             },
@@ -1051,7 +914,32 @@ const loadedVideoIdsRef = useRef(new Set());
             observer.disconnect();
             clearTimeout(timer);
           };
-        }, [videos, viewMode, activeIndex]);
+        }, [videos, viewMode]);
+
+        // IntersectionObserver for the last video sentinel to trigger pagination
+        useEffect(() => {
+          if (viewMode !== "feed" || videos.length === 0 || !hasMoreVideos) return;
+
+          const lastVideoElement = document.getElementById(`video-section-${videos.length - 1}`);
+          if (!lastVideoElement) return;
+
+          const sentinel = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                  loadMoreEndlessVideos();
+                }
+              });
+            },
+            { threshold: 0.1 }
+          );
+
+          sentinel.observe(lastVideoElement);
+
+          return () => {
+            sentinel.disconnect();
+          };
+        }, [videos.length, viewMode, hasMoreVideos]);
 
         function handleLikeToggle(index) {
           setVideos((previous) => {
@@ -1177,6 +1065,11 @@ const loadedVideoIdsRef = useRef(new Set());
                       />
                     );
                   })}
+                  {isLoading && videos.length > 0 && (
+                    <div className="w-full h-24 flex items-center justify-center bg-black snap-start">
+                      <Icon name="refresh" className="w-6 h-6 text-indigo-400 animate-spin" />
+                    </div>
+                  )}
                 </div>
 
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 z-30 hidden md:flex flex-col gap-4">
